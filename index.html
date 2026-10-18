@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Signal Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: status strip, a tower-and-rooftops horizon, then queue | live call | shop, with a training record below. */
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); color-scheme: light }
+:root {
+  --bg: #edf1f4; --panel: #ffffff; --ink: #15222c; --muted: #5b6c79; --line: #d2dbe2;
+  --accent: #d9530b; --accent-ink: #ffffff; --accent-soft: #fbe6d9;
+  --good: #2b7a3b; --good-soft: #def1e2; --warn: #a86400; --bad: #b42525; --bad-soft: #f8e0e0;
+  --sky: #dce7ef; --hill: #c3d2dc;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e161c; --panel: #15212a; --ink: #e5ecf1; --muted: #8fa2b0; --line: #26363f;
+  --accent: #ff8a3d; --accent-ink: #1b0d03; --accent-soft: #3a2415;
+  --good: #5cc775; --good-soft: #17301f; --warn: #f2b84b; --bad: #ff7272; --bad-soft: #3a1b1d;
+  --sky: #122029; --hill: #1c2c36; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e161c; --panel: #15212a; --ink: #e5ecf1; --muted: #8fa2b0; --line: #26363f;
+  --accent: #ff8a3d; --accent-ink: #1b0d03; --accent-soft: #3a2415;
+  --good: #5cc775; --good-soft: #17301f; --warn: #f2b84b; --bad: #ff7272; --bad-soft: #3a1b1d;
+  --sky: #122029; --hill: #1c2c36; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 32px }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 16px }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: .01em }
+h1 { font-size: 30px; line-height: 1; text-transform: uppercase }
+h2 { font-size: 20px; text-transform: uppercase; letter-spacing: .04em }
+.sub { color: var(--muted); font-size: 13px }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+button { font: inherit; color: inherit; cursor: pointer }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between }
+.brand { display: grid; gap: 4px }
+.brand h1 span { color: var(--accent) }
+.stats { display: flex; flex-wrap: wrap; gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; min-width: 112px }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums }
+.meter { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; overflow: hidden }
+.meter i { display: block; height: 100%; background: var(--accent); transition: width .3s }
+
+canvas#scene { width: 100%; height: 120px; display: block; border-radius: 8px; border: 1px solid var(--line) }
+
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 300px; gap: 16px; align-items: start }
+@media (max-width: 1020px) { .grid { grid-template-columns: 1fr 1fr } .live { grid-column: 1 / -1; order: -1 } }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 12px; min-width: 0 }
+.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+
+.answer { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 14px; font-family: var(--display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; transition: transform .08s }
+.answer:active { transform: scale(.98) }
+.answer:disabled { opacity: .45; cursor: default }
+.queue { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; max-height: 330px; overflow-y: auto }
+.queue li button { width: 100%; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 4px }
+.queue li button:hover { border-color: var(--accent) }
+.qrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13px }
+.tag { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 1px 6px; border-radius: 3px; background: var(--line); color: var(--muted); white-space: nowrap }
+.tag.coach { background: var(--accent-soft); color: var(--accent) }
+.pat { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden }
+.pat i { display: block; height: 100%; background: var(--good) }
+.pat i.low { background: var(--bad) }
+.empty { color: var(--muted); font-size: 13px; padding: 8px 0 }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); max-height: 140px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 8px }
+.log b { color: var(--ink); font-weight: 500 }
+
+.live { min-height: 420px }
+.idle { display: grid; gap: 10px; color: var(--muted); align-content: center; min-height: 340px; text-align: center; justify-items: center }
+.idle h3 { color: var(--ink); font-size: 24px }
+.idle p { max-width: 42ch; margin: 0 }
+.callhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline }
+.quote { font-size: 17px; line-height: 1.45; margin: 0; padding-left: 12px; border-left: 3px solid var(--accent) }
+.acct { font-family: var(--mono); font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 3px 14px; overflow-x: auto }
+.acct dt { color: var(--muted) }
+.acct dd { margin: 0 }
+.acct-h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: -6px }
+.opts { display: grid; gap: 8px }
+.opt { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; grid-template-columns: 22px 1fr; gap: 8px; line-height: 1.4 }
+.opt:hover:not(:disabled) { border-color: var(--accent) }
+.opt .l { font-family: var(--mono); font-weight: 500; color: var(--accent) }
+.opt:disabled { cursor: default }
+.opt.struck { opacity: .4; text-decoration: line-through }
+.opt.best { border-color: var(--good); background: var(--good-soft) }
+.opt.pick.s0 { border-color: var(--bad); background: var(--bad-soft) }
+.opt.pick.s1 { border-color: var(--warn) }
+.opt .why { grid-column: 2; font-size: 13px; color: var(--muted) }
+.verdict { border-radius: 6px; padding: 12px; display: grid; gap: 6px }
+.verdict.s2 { background: var(--good-soft) } .verdict.s1 { background: var(--accent-soft) } .verdict.s0 { background: var(--bad-soft) }
+.verdict strong { font-family: var(--display); font-size: 20px; text-transform: uppercase; letter-spacing: .03em }
+.verdict p { margin: 0 }
+.row { display: flex; gap: 8px; flex-wrap: wrap }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 8px 14px; font-weight: 500 }
+.btn:hover:not(:disabled) { border-color: var(--accent) }
+.btn.primary { background: var(--ink); color: var(--panel); border-color: var(--ink) }
+.btn:disabled { opacity: .45; cursor: default }
+
+.shop { display: grid; gap: 8px }
+.item { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 10px 12px; display: grid; gap: 2px }
+.item:hover:not(:disabled) { border-color: var(--accent) }
+.item:disabled { cursor: default; opacity: .55 }
+.item.owned { opacity: 1; border-style: dashed }
+.item .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 600 }
+.item .t .mono { font-weight: 500; color: var(--accent) }
+.item .d { font-size: 12.5px; color: var(--muted) }
+.shop-h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px }
+
+.record { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px }
+@media (max-width: 800px) { .record { grid-template-columns: 1fr } }
+table { width: 100%; border-collapse: collapse; font-size: 13px }
+th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line) }
+td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: middle }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 60px }
+.bar i { display: block; height: 100%; background: var(--good) }
+.bar i.mid { background: var(--warn) } .bar i.lowv { background: var(--bad) }
+.lessons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 13px }
+.lessons li { border-left: 3px solid var(--bad); padding-left: 10px }
+.lessons .tp { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+footer.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: 12.5px }
+footer.foot p { margin: 0; max-width: 70ch }
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 8px 16px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px) }
+.toast.on { opacity: 1 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Signal <span>Desk</span></h1>
+      <div class="sub">Run the support desk at a growing wireless ISP. Answer coaching calls well and the network grows.</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Cash</div><div class="v" id="sCash">$0</div></div>
+      <div class="stat"><div class="k">Subscribers</div><div class="v" id="sSubs">0</div><div class="meter"><i id="mSubs"></i></div></div>
+      <div class="stat"><div class="k">Revenue</div><div class="v" id="sRev">$0/s</div></div>
+      <div class="stat"><div class="k">CSAT</div><div class="v" id="sCsat">75</div><div class="meter"><i id="mCsat"></i></div></div>
+      <div class="stat"><div class="k" id="sRank">Trainee</div><div class="v" id="sXp">0 XP</div><div class="meter"><i id="mXp"></i></div></div>
+    </div>
+  </header>
+
+  <canvas id="scene" aria-label="Your towers and the homes they serve"></canvas>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="qh">
+      <header><h2 id="qh">Call queue</h2><span class="sub mono" id="qCount">0 waiting</span></header>
+      <button class="answer" id="answerBtn">Answer next call</button>
+      <ul class="queue" id="queue"></ul>
+      <ul class="log" id="log" aria-live="polite"></ul>
+    </section>
+
+    <section class="panel live" id="live" aria-live="polite"></section>
+
+    <section class="panel" aria-labelledby="gh">
+      <header><h2 id="gh">Grow the network</h2></header>
+      <div class="shop" id="shop"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="rh">
+    <header><h2 id="rh">Training record</h2><span class="sub mono" id="recSum"></span></header>
+    <div class="record">
+      <div style="overflow-x:auto"><table><thead><tr><th>Topic</th><th>Calls</th><th>Best answer</th><th style="width:30%">Accuracy</th></tr></thead><tbody id="recBody"></tbody></table></div>
+      <div><div class="shop-h" style="margin-bottom:8px">Lessons to review</div><ul class="lessons" id="lessons"></ul></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Scenarios teach general fixed-wireless support practice. Credits, verification steps and escalation paths vary by company, so follow your own policies on real calls.</p>
+    <div class="row" id="resetRow"><button class="btn" id="resetBtn">Reset progress</button></div>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="scenarios.js"></script>
+<script>
+const TOPICS = [...new Set(SCENARIOS.map(s => s.topic))];
+const ROUTINE = ['Asked for their next bill date','Reset their Wi-Fi password','Updated the card on file','Asked about holiday office hours','Confirmed an install appointment','Requested a paper statement','Asked how to read their usage','Changed their billing address','Asked about the referral credit'];
+const NAMES = ['A. Ruiz','B. Okafor','C. Lindqvist','D. Haddad','E. Moreno','F. Tran','G. Novak','H. Begay','I. Kowalski','J. Mensah','K. Sato','L. Duarte'];
+const RANKS = [[0,'Trainee',1],[60,'Tier 1 CSR',1.25],[180,'Tier 2 CSR',1.5],[400,'Senior CSR',2],[800,'Support Lead',2.5]];
+const UPGRADES = [
+  {id:'kb', name:'Knowledge base', cost:250, d:'Adds a "Check KB" button that rules out one wrong answer per call.'},
+  {id:'remote', name:'Remote CPE tools', cost:600, d:'Routine calls close faster and pay double.'},
+  {id:'mon', name:'Network monitoring', cost:1400, d:'Catch problems before customers call: 20% fewer calls.'},
+  {id:'portal', name:'Self-service portal', cost:3200, d:'Customers pay bills and reset Wi-Fi online: 20% fewer calls.'},
+];
+const SAVE_KEY = 'signal-desk-v1';
+
+let S;
+function fresh() {
+  return { cash: 80, subs: 30, towers: 1, mktg: 0, csrs: 0, up: {}, csat: 75, xp: 0,
+    queue: [], active: null, nextId: 1041, callAcc: 0.6, csrAcc: 0,
+    stats: Object.fromEntries(TOPICS.map(t => [t, {a:0, c:0}])), seen: {}, missed: [], log: [], handled: 0, abandoned: 0 };
+}
+function load() { try { const r = localStorage.getItem(SAVE_KEY); return r ? JSON.parse(r) : null } catch { return null } }
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)) } catch {} }
+
+// ---------- Derived numbers ----------
+const cap = () => S.towers * 80;
+const revRate = () => S.subs * 0.06;
+const rank = () => { let r = RANKS[0]; for (const x of RANKS) if (S.xp >= x[0]) r = x; return r };
+const nextRank = () => RANKS.find(x => x[0] > S.xp);
+const towerCost = () => Math.round(150 * Math.pow(1.7, S.towers - 1));
+const mktgCost = () => Math.round(60 * Math.pow(1.5, S.mktg));
+const csrCost = () => Math.round(120 * Math.pow(1.45, S.csrs));
+const routinePay = () => (3 + S.subs * 0.02) * (S.up.remote ? 2 : 1);
+const coachPay = () => (25 + S.subs * 0.3) * rank()[2];
+
+function money(n) {
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e4) return '$' + (n / 1e3).toFixed(1) + 'k';
+  return '$' + Math.floor(n).toLocaleString();
+}
+function log(html) { S.log.unshift(html); S.log.length = Math.min(S.log.length, 30); renderLog() }
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1800) }
+const $ = id => document.getElementById(id);
+
+// ---------- Calls ----------
+function pickScenario() {
+  // Weight toward unseen scenarios and topics the trainee keeps missing
+  const waiting = new Set(S.queue.filter(q => q.sid).map(q => q.sid));
+  const pool = SCENARIOS.filter(s => !waiting.has(s.id) && !(S.active && S.active.sid === s.id));
+  if (!pool.length) return null;
+  const w = pool.map(s => { const st = S.stats[s.topic] || {a:0,c:0}; return (S.seen[s.id] ? 1 : 3) + (st.a - st.c) * 1.5 });
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i] }
+  return pool[pool.length - 1];
+}
+function spawnCall() {
+  if (S.queue.length >= 12) { S.abandoned++; S.csat -= 2; log('<b>Busy signal.</b> Queue full, a caller gave up.'); return }
+  const coachWaiting = S.queue.filter(q => q.sid).length;
+  const sc = (Math.random() < 0.32 && coachWaiting < 3) ? pickScenario() : null;
+  S.queue.push(sc
+    ? { id: S.nextId++, sid: sc.id, name: sc.caller, age: 0, pat: 120 }
+    : { id: S.nextId++, sid: null, name: NAMES[Math.floor(Math.random() * NAMES.length)], age: 0, pat: 45 });
+}
+function resolveRoutine(q, byCsr) {
+  const pay = routinePay() * (byCsr ? 0.8 : 1);
+  S.cash += pay; S.csat += byCsr ? 0.3 : 0.5; S.handled++;
+  const what = ROUTINE[q.id % ROUTINE.length];
+  log(`<b>${byCsr ? 'CSR' : 'You'}</b> · ${q.name}: ${what.toLowerCase()}. +${money(pay)}`);
+}
+function answer(id) {
+  if (S.active) { toast('Finish the call you are on first.'); return }
+  const i = id == null ? 0 : S.queue.findIndex(q => q.id === id);
+  if (i < 0 || !S.queue.length) return;
+  const q = S.queue.splice(i, 1)[0];
+  if (!q.sid) { resolveRoutine(q, false); renderQueue(); return }
+  const sc = SCENARIOS.find(s => s.id === q.sid);
+  const order = sc.options.map((_, k) => k).sort(() => Math.random() - 0.5);
+  S.active = { qid: q.id, sid: q.sid, order, choice: null, struck: null };
+  renderQueue(); renderLive();
+}
+function choose(k) {
+  const a = S.active; if (!a || a.choice != null) return;
+  const sc = SCENARIOS.find(s => s.id === a.sid);
+  const s = sc.options[k].s;
+  a.choice = k;
+  const st = S.stats[sc.topic] || (S.stats[sc.topic] = {a:0, c:0});
+  st.a++; if (s === 2) st.c++;
+  S.seen[sc.id] = (S.seen[sc.id] || 0) + 1;
+  S.handled++;
+  const before = rank()[1];
+  if (s === 2) { const p = coachPay(); a.pay = p; S.cash += p; S.csat += 4; S.xp += 12 }
+  else if (s === 1) { const p = coachPay() * 0.4; a.pay = p; S.cash += p; S.csat += 1; S.xp += 5 }
+  else { a.pay = 0; S.csat -= 5; S.xp += 2;
+    S.missed = [{ topic: sc.topic, lesson: sc.lesson }, ...S.missed.filter(m => m.lesson !== sc.lesson)].slice(0, 6) }
+  if (s === 2) S.missed = S.missed.filter(m => m.lesson !== sc.lesson);
+  log(`<b>Coaching</b> · ${sc.topic}: ${['missed', 'partial', 'best answer'][s]}${a.pay ? ' +' + money(a.pay) : ''}`);
+  if (rank()[1] !== before) toast('Promoted to ' + rank()[1] + '. Coaching calls now pay ×' + rank()[2] + '.');
+  clampCsat(); renderLive(); renderRecord(); save();
+}
+function checkKb() {
+  const a = S.active; if (!a || a.struck != null || !S.up.kb) return;
+  const sc = SCENARIOS.find(s => s.id === a.sid);
+  const wrong = a.order.filter(k => sc.options[k].s === 0);
+  a.struck = wrong[Math.floor(Math.random() * wrong.length)];
+  renderLive();
+}
+function closeCall() { S.active = null; renderLive(); save() }
+const clampCsat = () => { S.csat = Math.max(0, Math.min(100, S.csat)) };
+
+// ---------- Shop ----------
+function buy(kind) {
+  let c;
+  if (kind === 'tower') { c = towerCost(); if (S.cash < c) return; S.cash -= c; S.towers++; log(`<b>Tower ${S.towers} lit.</b> Room for ${cap()} subscribers.`) }
+  else if (kind === 'mktg') { c = mktgCost(); if (S.cash < c) return; S.cash -= c; S.mktg++; log('<b>Marketing</b> campaign launched.') }
+  else if (kind === 'csr') { c = csrCost(); if (S.cash < c) return; S.cash -= c; S.csrs++; log(`<b>Hired CSR #${S.csrs}.</b> They take routine calls.`) }
+  else { const u = UPGRADES.find(x => x.id === kind); if (!u || S.up[kind] || S.cash < u.cost) return; S.cash -= u.cost; S.up[kind] = 1; log(`<b>${u.name}</b> installed.`); if (S.active) renderLive() }
+  updateShop(); save();
+}
+
+// ---------- Tick ----------
+function tick(dt) {
+  S.cash += revRate() * dt;
+  const csatF = Math.max(-1, Math.min(1, (S.csat - 55) / 45));
+  S.subs = Math.max(5, Math.min(cap(), S.subs + (0.12 + S.mktg * 0.22) * csatF * dt));
+  if (S.subs >= cap() && csatF > 0) S.atCap = true; else S.atCap = false;
+  const lambda = S.subs * 0.0035 * (S.up.mon ? 0.8 : 1) * (S.up.portal ? 0.8 : 1);
+  S.callAcc += lambda * dt;
+  while (S.callAcc >= 1) { S.callAcc--; spawnCall() }
+  for (const q of S.queue) q.age += dt;
+  const gone = S.queue.filter(q => q.age >= q.pat);
+  if (gone.length) { S.queue = S.queue.filter(q => q.age < q.pat);
+    for (const q of gone) { S.abandoned++; S.csat -= q.sid ? 4 : 2; log(`<b>Abandoned</b> · ${q.name} hung up after waiting.`) } }
+  S.csrAcc += S.csrs * dt / (S.up.remote ? 4 : 6);
+  while (S.csrAcc >= 1) {
+    const i = S.queue.findIndex(q => !q.sid);
+    if (i < 0) { S.csrAcc = Math.min(S.csrAcc, 1); break }
+    S.csrAcc--; resolveRoutine(S.queue.splice(i, 1)[0], true);
+  }
+  S.csat += (70 - S.csat) * 0.004 * dt;
+  clampCsat();
+}
+
+// ---------- Rendering ----------
+let qSig = null;
+function renderQueue() {
+  const sig = S.queue.map(q => q.id).join(',');
+  $('qCount').textContent = S.queue.length + ' waiting';
+  $('answerBtn').disabled = !S.queue.length || !!S.active;
+  if (sig !== qSig) {
+    qSig = sig;
+    $('queue').innerHTML = S.queue.length ? S.queue.map(q => `<li><button data-q="${q.id}">
+      <span class="qrow"><span>#${q.id} · ${q.name}</span><span class="tag ${q.sid ? 'coach' : ''}">${q.sid ? 'Coaching' : 'Routine'}</span></span>
+      <span class="pat"><i id="p${q.id}"></i></span></button></li>`).join('')
+      : '<li class="empty">Phones are quiet. Calls arrive as you add subscribers.</li>';
+  }
+  for (const q of S.queue) { const el = $('p' + q.id); if (el) { const f = 1 - q.age / q.pat; el.style.width = (f * 100) + '%'; el.classList.toggle('low', f < 0.3) } }
+}
+function renderLog() { $('log').innerHTML = S.log.slice(0, 12).map(l => `<li>${l}</li>`).join('') }
+
+function renderLive() {
+  const el = $('live'), a = S.active;
+  if (!a) {
+    const coach = S.queue.filter(q => q.sid).length;
+    el.innerHTML = `<div class="idle"><h3>No active call</h3>
+      <p>${coach ? `${coach} coaching call${coach > 1 ? 's are' : ' is'} waiting. They pay the most and teach the most.` : 'Routine calls pay a little. Coaching calls test your troubleshooting and pay far more.'}</p>
+      <p class="sub">Answer a call from the queue to get started.</p></div>`;
+    return;
+  }
+  const sc = SCENARIOS.find(s => s.id === a.sid), done = a.choice != null;
+  const L = 'ABCD';
+  const opts = a.order.map((k, i) => {
+    const o = sc.options[k];
+    let cls = 'opt';
+    if (done) { if (o.s === 2) cls += ' best'; if (k === a.choice) cls += ' pick s' + o.s }
+    else if (k === a.struck) cls += ' struck';
+    return `<button class="${cls}" data-o="${k}" ${done || k === a.struck ? 'disabled' : ''}>
+      <span class="l">${L[i]}</span><span>${o.t}</span>${done && (k === a.choice || o.s === 2) ? `<span class="why">${o.why}</span>` : ''}</button>`;
+  }).join('');
+  const pick = done ? sc.options[a.choice] : null;
+  el.innerHTML = `
+    <div class="callhead"><h2>On the line · ${sc.caller}</h2><span class="tag coach">${sc.topic}</span></div>
+    <p class="quote">“${sc.quote}”</p>
+    <div class="acct-h">Account &amp; network · plan ${sc.plan}</div>
+    <dl class="acct">${sc.data.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+    ${done ? `<div class="verdict s${pick.s}"><strong>${['Not the right call', 'Partly right', 'Best practice'][pick.s]}</strong>
+      <p>${sc.lesson}</p><p class="sub mono">${pick.s ? '+' + money(a.pay) + ' · ' : ''}CSAT ${pick.s === 2 ? '+4' : pick.s ? '+1' : '−5'} · XP +${[2, 5, 12][pick.s]}</p></div>` : '<div class="sub">What do you do next?</div>'}
+    <div class="opts">${opts}</div>
+    <div class="row">${done ? '<button class="btn primary" id="closeBtn">Close ticket</button>'
+      : S.up.kb ? `<button class="btn" id="kbBtn" ${a.struck != null ? 'disabled' : ''}>Check KB</button>` : ''}</div>`;
+  if (done) $('closeBtn').focus();
+}
+
+const shopEls = {};
+function buildShop() {
+  const items = [
+    ['tower', 'Build tower', 'Adds a sector with room for 80 more subscribers.'],
+    ['mktg', 'Marketing campaign', 'More sign-ups each day while CSAT stays healthy.'],
+    ['csr', 'Hire a CSR', 'Handles routine calls automatically. Coaching calls stay yours.'],
+  ];
+  let h = '<div class="shop-h">Build</div>' + items.map(([id, n, d]) => `<button class="item" data-b="${id}"><span class="t"><span>${n} <span class="sub" data-own="${id}"></span></span><span class="mono" data-c="${id}"></span></span><span class="d">${d}</span></button>`).join('');
+  h += '<div class="shop-h">Upgrades</div>' + UPGRADES.map(u => `<button class="item" data-b="${u.id}"><span class="t"><span>${u.name}</span><span class="mono" data-c="${u.id}">${money(u.cost)}</span></span><span class="d">${u.d}</span></button>`).join('');
+  $('shop').innerHTML = h;
+  $('shop').querySelectorAll('[data-b]').forEach(b => shopEls[b.dataset.b] = b);
+}
+function updateShop() {
+  const c = { tower: towerCost(), mktg: mktgCost(), csr: csrCost() };
+  const own = { tower: S.towers, mktg: S.mktg, csr: S.csrs };
+  for (const k in c) {
+    shopEls[k].disabled = S.cash < c[k];
+    shopEls[k].querySelector('[data-c]').textContent = money(c[k]);
+    shopEls[k].querySelector('[data-own]').textContent = '×' + own[k];
+  }
+  for (const u of UPGRADES) {
+    const b = shopEls[u.id], have = !!S.up[u.id];
+    b.disabled = have || S.cash < u.cost; b.classList.toggle('owned', have);
+    b.querySelector('[data-c]').textContent = have ? 'Installed' : money(u.cost);
+  }
+}
+function renderStats() {
+  $('sCash').textContent = money(S.cash);
+  $('sSubs').textContent = Math.floor(S.subs) + ' / ' + cap();
+  $('mSubs').style.width = (S.subs / cap() * 100) + '%';
+  $('sRev').textContent = '$' + revRate().toFixed(2) + '/s';
+  $('sCsat').textContent = Math.round(S.csat) + (S.csat < 55 ? ' ↓ churn' : S.atCap ? ' · full' : '');
+  $('mCsat').style.width = S.csat + '%';
+  const r = rank(), n = nextRank();
+  $('sRank').textContent = r[1];
+  $('sXp').textContent = S.xp + ' XP';
+  $('mXp').style.width = (n ? (S.xp - r[0]) / (n[0] - r[0]) * 100 : 100) + '%';
+}
+function renderRecord() {
+  let A = 0, C = 0;
+  $('recBody').innerHTML = TOPICS.map(t => {
+    const st = S.stats[t] || {a:0, c:0}; A += st.a; C += st.c;
+    const p = st.a ? st.c / st.a : 0;
+    return `<tr><td>${t}</td><td class="num">${st.a}</td><td class="num">${st.c}</td>
+      <td>${st.a ? `<div class="bar"><i class="${p < .5 ? 'lowv' : p < .8 ? 'mid' : ''}" style="width:${p * 100}%"></i></div>` : '<span class="sub">Not yet</span>'}</td></tr>`;
+  }).join('');
+  $('recSum').textContent = A ? `${C}/${A} best answers · ${Math.round(C / A * 100)}%` : 'No coaching calls yet';
+  $('lessons').innerHTML = S.missed.length ? S.missed.map(m => `<li><div class="tp">${m.topic}</div>${m.lesson}</li>`).join('')
+    : '<li style="border-color:var(--good)">Missed answers show up here with the lesson, until you get that call right.</li>';
+}
+
+// ---------- Horizon scene ----------
+const cv = $('scene'), cx = cv.getContext('2d');
+const HOUSES = Array.from({length: 240}, (_, i) => { const r = Math.sin(i * 12.9898) * 43758.5453; return [r - Math.floor(r), (Math.sin(i * 78.233) * 9631.7) % 1] });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function draw(t) {
+  const w = cv.clientWidth, h = cv.clientHeight, dpr = devicePixelRatio || 1;
+  if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr }
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const css = getComputedStyle(document.documentElement), tok = n => css.getPropertyValue(n).trim();
+  cx.fillStyle = tok('--sky'); cx.fillRect(0, 0, w, h);
+  const ground = y => h - 26 - Math.sin(y / w * Math.PI * 3) * 8;
+  cx.fillStyle = tok('--hill'); cx.beginPath(); cx.moveTo(0, h);
+  for (let x = 0; x <= w; x += 8) cx.lineTo(x, ground(x)); cx.lineTo(w, h); cx.fill();
+  const n = Math.min(S.towers, 12), lit = Math.floor(S.subs);
+  // homes: lit windows are subscribers
+  const shown = Math.min(240, Math.max(lit + 20, 60));
+  for (let i = 0; i < shown; i++) {
+    const x = HOUSES[i][0] * w, y = ground(x) + 4 + Math.abs(HOUSES[i][1]) * 14;
+    cx.fillStyle = i < lit ? tok('--accent') : tok('--muted');
+    cx.globalAlpha = i < lit ? 0.9 : 0.35; cx.fillRect(x, y, 4, 3); cx.globalAlpha = 1;
+  }
+  for (let i = 0; i < n; i++) {
+    const x = w * (i + 0.5) / n, base = ground(x), top = base - 70;
+    if (!reduced) for (let k = 0; k < 2; k++) {
+      const p = ((t / 2600 + k / 2 + i * 0.17) % 1);
+      cx.strokeStyle = tok('--accent'); cx.globalAlpha = (1 - p) * 0.5; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.arc(x, top + 6, 10 + p * Math.min(90, w / n * 0.6), Math.PI * 1.05, Math.PI * 1.95); cx.stroke();
+    }
+    cx.globalAlpha = 1; cx.strokeStyle = tok('--ink'); cx.lineWidth = 1.5; cx.beginPath();
+    cx.moveTo(x - 9, base); cx.lineTo(x, top); cx.lineTo(x + 9, base);
+    for (let s = 1; s < 5; s++) { const yy = base - s * 14, hw = 9 * (1 - s * 14 / 70); cx.moveTo(x - hw, yy); cx.lineTo(x + hw, yy - 7) }
+    cx.stroke();
+    cx.fillStyle = tok('--ink'); cx.fillRect(x - 6, top + 4, 3, 9); cx.fillRect(x + 3, top + 4, 3, 9);
+    cx.fillStyle = tok('--bad'); cx.globalAlpha = reduced || Math.floor(t / 900) % 2 ? 1 : 0.25;
+    cx.beginPath(); cx.arc(x, top - 2, 2.5, 0, 7); cx.fill(); cx.globalAlpha = 1;
+  }
+  if (S.towers > 12) { cx.fillStyle = tok('--muted'); cx.font = '12px ' + tok('--mono'); cx.fillText('+' + (S.towers - 12) + ' more towers', 8, 16) }
+  requestAnimationFrame(draw);
+}
+
+// ---------- Events & boot ----------
+$('answerBtn').onclick = () => answer(null);
+$('queue').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) answer(+b.dataset.q) });
+$('shop').addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (b && !b.disabled) buy(b.dataset.b) });
+$('live').addEventListener('click', e => {
+  const o = e.target.closest('[data-o]'); if (o && !o.disabled) return choose(+o.dataset.o);
+  if (e.target.id === 'closeBtn') closeCall();
+  if (e.target.id === 'kbBtn') checkKb();
+});
+function wireReset() {
+  $('resetBtn').onclick = () => {
+    $('resetRow').innerHTML = '<span>Erase all progress?</span><button class="btn" id="rNo">Keep playing</button><button class="btn primary" id="rYes">Erase</button>';
+    $('rNo').onclick = restoreReset;
+    $('rYes').onclick = () => { S = fresh(); qSig = null; save(); restoreReset(); renderAll(); toast('Progress erased.') };
+  };
+}
+function restoreReset() { $('resetRow').innerHTML = '<button class="btn" id="resetBtn">Reset progress</button>'; wireReset() }
+function renderAll() { renderStats(); renderQueue(); renderLive(); renderLog(); updateShop(); renderRecord() }
+
+function start(data) {
+  S = (data && data.S) || load() || fresh();
+  for (const t of TOPICS) S.stats[t] = S.stats[t] || {a:0, c:0};
+  if (!S.log.length) log('<b>Shift started.</b> Your first tower is live with 30 subscribers.');
+  buildShop(); wireReset(); renderAll();
+  let last = performance.now(), saveT = 0;
+  setInterval(() => {
+    const now = performance.now(), dt = Math.min(5, (now - last) / 1000); last = now;
+    tick(dt); renderStats(); renderQueue(); updateShop();
+    if ((saveT += dt) > 5) { saveT = 0; save() }
+  }, 250);
+  requestAnimationFrame(draw);
+}
+window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+addEventListener('visibilitychange', () => { if (document.hidden) save() });
+</script>
+</body>
+</html>

@@ -40,7 +40,7 @@
       {t:'Reboot the radio remotely and ask them to call back if tonight is still slow.', s:1, why:'Might help briefly, but you still don’t know the cause.'},
       {t:'Give them a credit and close the ticket.', s:0, why:'Nothing gets fixed.'}]},
     { say:'Signal is -62 dBm with 30 dB SNR. Sector Ridge-3 B peaks at 95% from 7 to 11 PM.',
-      data:[['Signal','-62 dBm / SNR 30 dB'],['Sector peak','95% (7-11 PM)']],
+      data:[['Signal (RSSI)','-62 dBm / SNR 30 dB'],['Sector peak','95% (7-11 PM)']],
       options:[
       {t:'Tell them their signal is weak and book a realignment.', s:0, why:'The signal is good. A realignment won’t help.'},
       {t:'Tell them the sector is busy at night and that engineering is aware.', s:1, why:'Likely right, but you need a wired test to prove it.'},

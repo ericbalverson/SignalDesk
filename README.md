@@ -16,6 +16,19 @@ Open `index.html` in a browser. No build step and no server needed.
 
 To host it for a team, turn on GitHub Pages for this repo (Settings → Pages → deploy from the `main` branch, root folder).
 
+## Glossary
+
+Technical terms in a call (RSSI, SNR, ONT, PoE injector, CGNAT and about 50 more) are marked with a small **?**. Clicking one, or pressing Enter on it, opens an info screen and pauses the game. The screen covers:
+
+- what the term means
+- good and bad readings, where they apply (for example RSSI in dBm or fiber light levels)
+- why it matters to the customer and to satisfaction
+- how to explain it to a customer on a call
+
+Closing the screen resumes the game, unless it was already paused. Each term is marked once per call. Glossary entries also show up in **Reference** search.
+
+Terms live in [`glossary.js`](glossary.js). Each entry has the words to match (`match`), optional exact-case matching for acronyms (`cs`), an optional network (`net`) for terms that differ between wireless and fiber (LOS means line of sight on wireless and loss of signal on fiber), and the text fields `what`, `ranges`, `csat` and `say`. The ranges are rules of thumb, so adjust them to your equipment.
+
 ## Operator setup
 
 The first time the game opens, the operator sees a setup screen. It opens again from the **Setup** button at the top. Choose:

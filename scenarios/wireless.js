@@ -5,7 +5,7 @@
    quotes:['Nothing works. The router lights are on but no websites load.',
            'Internet’s been out since this morning. I already restarted the router twice.',
            'My kids can’t get online for school. Everything says no connection.'],
-   data:[['CPE status','OFFLINE since 7:42 AM'],['Last signal','-61 dBm / SNR 32 dB'],['Sector','Ridge-3 B · UP'],['Neighbors','38 of 38 online'],['Account','Current']],
+   data:[['CPE status','OFFLINE since 7:42 AM'],['Last signal (RSSI)','-61 dBm / SNR 32 dB'],['Sector','Ridge-3 B · UP'],['Neighbors','38 of 38 online'],['Account','Current']],
    options:[
     {t:'Have them check the PoE injector for the roof radio: is its light on, and is the outlet working?', s:2, why:'The radio is offline while the sector and neighbors are fine, so the fault is local power. The injector takes a minute to check.'},
     {t:'Tell them the tower is having some trouble and to give it a few hours.', s:0, why:'Monitoring shows the sector up with every neighbor online. That answer is wrong and leaves them down.'},
@@ -17,7 +17,7 @@
    quotes:['I pay for 50 meg and I’m getting 12. This is a joke.',
            'Netflix keeps buffering in the bedroom. Are you throttling me?',
            'Your speed is terrible. My phone test says 12 megs.'],
-   data:[['Signal','-58 dBm / SNR 34 dB'],['Radio speed test','49.6 / 9.8 Mbps'],['Customer test','12.1 Mbps · Wi-Fi, back bedroom'],['Sector load','41%']],
+   data:[['Signal (RSSI)','-58 dBm / SNR 34 dB'],['Radio speed test','49.6 / 9.8 Mbps'],['Customer test','12.1 Mbps · Wi-Fi, back bedroom'],['Sector load','41%']],
    options:[
     {t:'Point out the radio gets full speed, then help them test beside the router and talk about Wi-Fi coverage.', s:2, why:'The radio test proves the network delivers the plan. The gap is inside the home, almost always Wi-Fi range.'},
     {t:'Escalate it to the NOC as a network speed problem for the sector.', s:0, why:'The data already shows the network is fine. This wastes NOC time and the bedroom stays slow.'},
@@ -29,7 +29,7 @@
    quotes:['Every night from about 7 to 11 everything buffers. Mornings are perfect.',
            'Evenings are unusable. I can’t even get through a video call after dinner.',
            'It’s fast at lunch and garbage at night. What’s going on?'],
-   data:[['Signal','-63 dBm / SNR 31 dB'],['Sector peak load','96% (7-11 PM)'],['Wired test at 8 PM','14 / 6 Mbps'],['Sector tickets this week','6']],
+   data:[['Signal (RSSI)','-63 dBm / SNR 31 dB'],['Sector peak load','96% (7-11 PM)'],['Wired test at 8 PM','14 / 6 Mbps'],['Sector tickets this week','6']],
    options:[
     {t:'Explain the sector is overloaded at peak, and escalate with the load data and their wired test.', s:2, why:'Good signal, a wired test and 96% sector load point to capacity. Engineering needs the evidence to fix it.'},
     {t:'Tell them it’s their Wi-Fi and suggest a better router.', s:0, why:'Their wired test rules out Wi-Fi. Blaming the customer here damages trust.'},
@@ -41,7 +41,7 @@
    quotes:['It drops all the time now. Started sometime around April.',
            'Service was great all winter. Now it cuts out every afternoon.',
            'It keeps dropping, especially when it’s windy out.'],
-   data:[['Signal history','Jan -60 → May -75 dBm'],['SNR now','15 dB'],['Install','2023 · eave mount'],['Site notes','Oak trees west of house']],
+   data:[['RSSI history','Jan -60 → May -75 dBm'],['SNR now','15 dB'],['Install','2023 · eave mount'],['Site notes','Oak trees west of house']],
    options:[
     {t:'Explain leaves may block the path to the tower, and book a tech to realign or raise the mount.', s:2, why:'A steady decline starting in spring with trees in the path is classic foliage loss. It needs a site visit.'},
     {t:'Have them power cycle the radio each time it drops.', s:0, why:'Reboots do nothing for a blocked path. They’ll keep dropping all summer.'},
@@ -53,7 +53,7 @@
    quotes:['My games lag terribly. Ping jumps to 300.',
            'Zoom freezes every few minutes even though speed tests look fine.',
            'Speeds are OK but everything feels laggy and stutters.'],
-   data:[['Signal','-59 dBm'],['Noise floor','-72 dBm → SNR 13 dB'],['Retransmits','18%'],['Wired test','47/9 Mbps · 28-310 ms']],
+   data:[['Signal (RSSI)','-59 dBm'],['Noise floor','-72 dBm → SNR 13 dB'],['Retransmits','18%'],['Wired test','47/9 Mbps · 28-310 ms']],
    options:[
     {t:'Note the strong signal but high noise, and escalate to the NOC for an interference review with these stats.', s:2, why:'Strong signal with a high noise floor and heavy retransmits points to interference the NOC can address.'},
     {t:'Recommend a gaming router to bring the latency down.', s:0, why:'The wired test already shows the spikes. A new router won’t touch RF interference.'},
@@ -65,7 +65,7 @@
    quotes:['Ever since early September it’s been awful.',
            'It used to work fine. Now it barely works at all.',
            'Did you change something at the tower last month?'],
-   data:[['Signal history','Steady -63 dBm until Sept 3, then -79 dBm'],['SNR now','11 dB'],['Tower changes','None in 90 days'],['Customer mentions','Neighbor built a pole barn west of the house']],
+   data:[['RSSI history','Steady -63 dBm until Sept 3, then -79 dBm'],['SNR now','11 dB'],['Tower changes','None in 90 days'],['Customer mentions','Neighbor built a pole barn west of the house']],
    options:[
     {t:'Note the new barn sits in the signal path, and book a site visit to find a new mount spot or tower.', s:2, why:'A sudden, permanent drop on a known date plus a new structure is a line-of-sight block. A tech can move the mount or re-aim.'},
     {t:'Tell them the tower must have been moved or adjusted.', s:0, why:'Records show no tower changes. Guessing gives the customer wrong information.'},
@@ -77,7 +77,7 @@
    quotes:['After that ice storm last night it’s barely hanging on.',
            'It’s slow and dropping since this morning. Everything is covered in ice.',
            'Is the cold weather breaking my internet?'],
-   data:[['Signal','-80 dBm since 6 AM (normally -64)'],['Weather','Freezing rain overnight, 28°F'],['Neighbors','Several with lower signal']],
+   data:[['Signal (RSSI)','-80 dBm since 6 AM (normally -64)'],['Weather','Freezing rain overnight, 28°F'],['Neighbors','Several with lower signal']],
    options:[
     {t:'Schedule a tech for the first open slot today to inspect the dish and clear off any ice safely.', s:1, why:'May be needed if it doesn’t recover, but most icing clears on its own as it melts.'},
     {t:'Explain ice weakens the signal, ask them not to climb, and follow up if it doesn’t recover.', s:2, why:'Accurate, safe, and it sets a clear next step if the thaw doesn’t fix it.'},
@@ -137,7 +137,7 @@
    quotes:['I’ll just get on the roof and turn the dish myself. Which way?',
            'My son can climb up and aim it. Which direction is the tower?',
            'Can you talk me through adjusting the antenna? I have a ladder.'],
-   data:[['Signal','-74 dBm (was -62 at install)'],['Home','2-story, steep roof']],
+   data:[['Signal (RSSI)','-74 dBm (was -62 at install)'],['Home','2-story, steep roof']],
    options:[
     {t:'Ask them not to climb or adjust anything, and let them know it may improve once the weather changes.', s:1, why:'Safe, but nothing gets fixed.'},
     {t:'Tell them to point it roughly northeast.', s:0, why:'Encourages a dangerous climb, and they’ll likely make alignment worse.'},
@@ -185,7 +185,7 @@
    quotes:['I want the 200 meg plan.',
            'My kids are home now. Bump me up to your fastest plan.',
            'Can you just switch me to 200 today?'],
-   data:[['CPE','Older 5 GHz model · max ~100 Mbps'],['Signal','-77 dBm / SNR 18 dB'],['Tower','Ridge-3 · supports 300 Mbps']],
+   data:[['CPE','Older 5 GHz model · max ~100 Mbps'],['Signal (RSSI)','-77 dBm / SNR 18 dB'],['Tower','Ridge-3 · supports 300 Mbps']],
    options:[
     {t:'Change the plan now and start billing the higher rate.', s:0, why:'They’ll pay for speed they never get, then call back angry.'},
     {t:'Upgrade them to the 100 Mbps plan today, since that’s the most their current radio can handle.', s:1, why:'Closer, but at -77 dBm they may not reach 100 either.'},

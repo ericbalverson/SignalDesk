@@ -312,14 +312,16 @@ function renderLive() {
       <input class="field" id="polQ" placeholder="Search policies and company knowledge" value="${esc(sc.kind === 'kb' ? '' : sc.topic)}">
       <div class="res" id="polRes"></div>
     </div>`;
+  markTerms(el, a.net);
   if (polOpen) renderPolicyHits();
   const focusBtn = $('nextBtn') || $('closeBtn'); if (focusBtn) focusBtn.focus();
 }
-const hasReference = () => LIB.policies.length || (LIB.kb || []).length || (LIB.kbPages || []).length;
+const hasReference = () => true;
 function policyHits(q) {
   const terms = q.toLowerCase().split(/\W+/).filter(t => t.length > 2);
   const paras = LIB.policies.flatMap(p => p.text.split(/\n\s*\n/).map(t => ({ name: 'Policy · ' + p.name, t: t.trim() })))
     .concat((LIB.kb || []).map(e => ({ name: 'FAQ · ' + e.cat, t: e.q + '\n' + e.a })))
+    .concat(GLOSSARY.map(g => ({ name: 'Glossary · ' + g.name, t: g.what + '\n' + g.csat })))
     .concat((LIB.kbPages || []).flatMap(p => p.text.split(/\n\s*\n/).map(t => ({ name: 'Website · ' + p.title, t: t.trim() }))))
     .filter(p => p.t);
   if (!terms.length) return paras.slice(0, 6);
@@ -554,7 +556,12 @@ function draw(t) {
 $('answerBtn').onclick = () => answer(null);
 $('queue').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) answer(+b.dataset.q) });
 $('shop').addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (b && !b.disabled) buy(b.dataset.b) });
+$('live').addEventListener('keydown', e => {
+  const g = e.target.closest('.gl');
+  if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); openTerm(g.dataset.term) }
+});
 $('live').addEventListener('click', e => {
+  const g = e.target.closest('.gl'); if (g) { e.preventDefault(); return openTerm(g.dataset.term) }
   const o = e.target.closest('[data-o]'); if (o && !o.disabled) return choose(+o.dataset.o);
   const id = e.target.id;
   if (id === 'closeBtn') closeCall();
@@ -570,6 +577,7 @@ $('mixChips').addEventListener('click', e => { const b = e.target.closest('[data
 $('pace').addEventListener('input', e => { S.set.pace = +e.target.value; renderControls() });
 $('hold').addEventListener('change', e => { S.set.hold = e.target.checked; renderQueue(); save() });
 document.addEventListener('keydown', e => {
+  if ($('term').open || $('setup').open) return;
   if (e.target.closest('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'p' || e.key === 'P') $('pauseBtn').click();
 });
@@ -636,6 +644,63 @@ function wireRows() {
   });
   $('custExport').onclick = () => download('signal-desk-scenarios.json', LIB.custom.map(s => ({ ...s, id: String(s.id).replace(/^c_/, '') })));
 }
+
+// ---------- Glossary: "?" on technical terms in the live call ----------
+const GLOSSARY = window.SIGNAL_DESK_GLOSSARY || [];
+const GL_BY_ID = new Map(GLOSSARY.map(g => [g.id, g]));
+const GL_PATTERNS = GLOSSARY.flatMap(g => g.match.map(m => ({ m, id: g.id, cs: !!g.cs, net: g.net || '' }))).sort((a, b) => b.m.length - a.m.length);
+const reEscape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const GL_RE = GL_PATTERNS.length ? new RegExp('(?<![\\w-])(' + GL_PATTERNS.map(p => reEscape(p.m)).join('|') + ')(?![\\w-])', 'gi') : null;
+function glossaryId(word, net) {
+  const p = GL_PATTERNS.find(p => p.m.toLowerCase() === word.toLowerCase() && (!p.cs || p.m === word) && (!p.net || p.net === net));
+  return p && p.id;
+}
+function markTerms(root, net) {
+  if (!GL_RE || !root) return;
+  const used = new Set(), nodes = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest('.gl, .tag, .l, h2, .mono, input, textarea, .pol, .hist') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const text = node.nodeValue, frag = document.createDocumentFragment();
+    let m, last = 0, changed = false;
+    GL_RE.lastIndex = 0;
+    while ((m = GL_RE.exec(text))) {
+      const id = glossaryId(m[1], net);
+      if (!id || used.has(id)) continue;
+      used.add(id); changed = true;
+      frag.append(text.slice(last, m.index));
+      const s = document.createElement('span');
+      s.className = 'gl'; s.dataset.term = id; s.tabIndex = 0; s.setAttribute('role', 'button');
+      s.setAttribute('aria-label', `${m[1]}: what does this mean?`);
+      s.append(m[1]); const i = document.createElement('i'); i.setAttribute('aria-hidden', 'true'); i.textContent = '?'; s.append(i);
+      frag.append(s); last = m.index + m[1].length;
+    }
+    if (changed) { frag.append(text.slice(last)); node.replaceWith(frag) }
+  }
+}
+let termWasPaused = false;
+function openTerm(id) {
+  const g = GL_BY_ID.get(id); if (!g) return;
+  $('termTitle').textContent = g.name;
+  $('termWhat').textContent = g.what;
+  $('termCsat').textContent = g.csat;
+  $('termRangeBox').hidden = !(g.ranges && g.ranges.length);
+  $('termRange').innerHTML = (g.ranges || []).map(([k, v, tone]) => `<div class="${esc(tone || '')}"><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('');
+  $('termSayBox').hidden = !g.say; $('termSay').textContent = g.say || '';
+  if (!$('term').open) {
+    termWasPaused = S.paused; S.paused = true; renderControls(); renderQueue();
+    $('term').showModal();
+  }
+}
+function closeTerm() {
+  if (!$('term').open) return;
+  $('term').close();
+  S.paused = termWasPaused; renderControls(); renderQueue(); if (!S.active) renderLive();
+}
+$('termClose').onclick = closeTerm;
+$('term').addEventListener('cancel', e => { e.preventDefault(); closeTerm() });
+$('term').addEventListener('click', e => { if (e.target === $('term')) closeTerm() });
 
 // ---------- Company knowledge in the library ----------
 function renderKb() {

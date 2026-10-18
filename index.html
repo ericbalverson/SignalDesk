@@ -208,6 +208,17 @@ dialog.setup::backdrop { background: rgba(0, 0, 0, .72) }
 .cmd code { white-space: nowrap; flex: 1 }
 .setup-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; padding-top: 16px; border-top: 1px solid var(--line) }
 
+/* Glossary terms and info screen */
+.gl { border-bottom: 1px dotted var(--dim); cursor: help; white-space: nowrap }
+.gl i { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 3px; vertical-align: 2px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); font: 600 10px/1 var(--mono); font-style: normal }
+.gl:hover i, .gl:focus-visible i { background: var(--accent); color: var(--bg) }
+dialog.term { width: min(620px, calc(100% - 32px)) }
+.ranges { display: grid; gap: 6px }
+.ranges div { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 12px; font-size: 13px; padding: 6px 10px; border-radius: 8px; background: #0b0b0c; border: 1px solid var(--line) }
+.ranges b { font-family: var(--mono); font-weight: 400; white-space: nowrap }
+.ranges .good b { color: var(--good) } .ranges .warn b { color: var(--warm) } .ranges .bad b { color: var(--bad) }
+.term p { color: var(--ink-2) }
+
 footer.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: 12.5px; padding-top: 14px; border-top: 1px solid var(--line) }
 footer.foot p { max-width: 70ch }
 .toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 5 }
@@ -407,12 +418,26 @@ footer.foot p { max-width: 70ch }
     </div>
   </div>
 </dialog>
+<dialog class="setup term" id="term" aria-labelledby="termTitle">
+  <div class="setup-in">
+    <div>
+      <div class="eyebrow">Glossary · game paused</div>
+      <h2 id="termTitle"></h2>
+    </div>
+    <div class="step"><div class="lbl">What it is</div><p id="termWhat"></p></div>
+    <div class="step" id="termRangeBox"><div class="lbl">Good and bad readings</div><div class="ranges" id="termRange"></div></div>
+    <div class="step"><div class="lbl">Why it matters to the customer</div><p id="termCsat"></p></div>
+    <div class="step" id="termSayBox"><div class="lbl">How to explain it on a call</div><p class="quote" id="termSay"></p></div>
+    <div class="setup-foot"><span class="sub">Ranges are typical rules of thumb. Your equipment and policies may differ.</span><button class="btn primary" id="termClose">Back to the call</button></div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="scenarios/wireless.js"></script>
 <script src="scenarios/fiber.js"></script>
 <script src="scenarios/shared.js"></script>
 <script src="scenarios/multistep.js"></script>
+<script src="glossary.js"></script>
 <script src="knowledge.js"></script>
 <script src="game.js"></script>
 </body>

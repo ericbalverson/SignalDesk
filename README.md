@@ -16,6 +16,12 @@ Open `index.html` in a browser. No build step and no server needed.
 
 To host it for a team, turn on GitHub Pages for this repo (Settings → Pages → deploy from the `main` branch, root folder).
 
+## Truck rolls
+
+Any answer that books, schedules or sends a technician is a truck roll. A wireframe truck drives across the screen, a −$300 splash pops up, and $300 comes out of cash, even if that takes it below zero. This happens whether or not sending a tech was the right call, the same way a real visit costs money either way. The call result shows the charge.
+
+Truck rolls are detected from the answer's wording. To set one explicitly, add `truck: true` or `truck: false` to an option in a scenario file or imported JSON. The cost is `TRUCK_COST` in `game.js`.
+
 ## Glossary
 
 Technical terms in a call (RSSI, SNR, ONT, PoE injector, CGNAT and others, 46 in all) are marked with a small **?**. Clicking one, or pressing Enter on it, opens an info screen and pauses the game. The screen covers:
@@ -79,7 +85,7 @@ Built-in scenarios live in [`scenarios/`](scenarios): `wireless.js`, `fiber.js`,
 | `caller` | Fixed caller name (optional; a random name is used otherwise) |
 | `quotes` | Different ways a customer might open the call. One is picked at random. |
 | `data` | `[label, value]` rows shown in the account and network panel |
-| `options` | Single-step calls: the choices. `s: 2` is best practice, `s: 1` is acceptable but incomplete, `s: 0` is wrong. `why` explains the rating. |
+| `options` | Single-step calls: the choices. `s: 2` is best practice, `s: 1` is acceptable but incomplete, `s: 0` is wrong. `why` explains the rating. Optional `truck: true` or `false` marks a truck roll. |
 | `steps` | Multi-step calls, instead of `options`: a list of steps. Each has `options`, plus optional `say` (what the customer says or what the CSR finds) and `data` (new rows). |
 | `lesson` | One-line takeaway shown at the end of the call |
 

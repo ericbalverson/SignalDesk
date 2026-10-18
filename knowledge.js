@@ -206,8 +206,8 @@ Rules:
         id: 'kb_' + hash(normQ(e.q)), net: 'any', topic: 'Company FAQ', kind: 'kb', plan: '',
         quotes: OPENERS.map(o => o ? o + lower : e.q),
         data: [['Topic', e.cat], ['Source', e.src || 'Company FAQ']],
-        options: [{ t: short(e.a), s: 2, why: 'This is what your company’s FAQ says.' },
-          ...distract.map(d => ({ t: short(d.a), s: 0, why: 'This answers a different question: “' + short(d.q, 90) + '”' }))],
+        options: [{ t: short(e.a), s: 2, truck: false, why: 'This is what your company’s FAQ says.' },
+          ...distract.map(d => ({ t: short(d.a), s: 0, truck: false, why: 'This answers a different question: “' + short(d.q, 90) + '”' }))],
         lesson: oneLine(e.q) + ' ' + short(e.a, 400),
       };
     }).filter(Boolean);

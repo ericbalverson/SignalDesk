@@ -24,11 +24,15 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 const shuffled = n => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a };
 
 // ---------- Scenarios ----------
+// Answers that book, schedule or send a technician are truck rolls. A scenario option can override this with truck: true/false.
+const TRUCK_COST = 300;
+const TRUCK_RE = /\b(book|schedule|send|dispatch|offer(?: to send)?)\b[^.,;]*?\b(tech|technician|visit|site survey|realignment)\b/i;
 function rows(d) { return Array.isArray(d) ? d.map(r => Array.isArray(r) ? [String(r[0] ?? ''), String(r[1] ?? '')] : [String(r), '']) : [] }
 function norm(sc, custom) {
   const steps = (sc.steps || [{ options: sc.options }]).map(st => ({
     say: st.say ? String(st.say) : '', data: rows(st.data),
-    options: st.options.map(o => ({ t: String(o.t), s: o.s, why: String(o.why || '') })) }));
+    options: st.options.map(o => ({ t: String(o.t), s: o.s, why: String(o.why || ''),
+      truck: typeof o.truck === 'boolean' ? o.truck : TRUCK_RE.test(String(o.t)) })) }));
   return { id: String(sc.id), net: ['wireless', 'fiber', 'any'].includes(sc.net) ? sc.net : 'any', topic: String(sc.topic),
     caller: sc.caller ? String(sc.caller) : '', plan: String(sc.plan || ''), quotes: (sc.quotes || [sc.quote]).map(String),
     data: rows(sc.data), steps, lesson: String(sc.lesson || ''), custom, kind: sc.kind || '' };
@@ -108,6 +112,7 @@ const callRate = () => S.subs * 0.0035 * S.set.pace * (S.up.mon ? 0.8 : 1) * (S.
 const held = () => S.set.hold && !!S.active;
 
 function money(n) {
+  if (n < 0) return '−' + money(-n);
   if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e4) return '$' + (n / 1e3).toFixed(1) + 'k';
   return '$' + Math.floor(n).toLocaleString();
@@ -169,6 +174,11 @@ function choose(k) {
   const before = rank()[1];
   const pay = coachPay() * [0, 0.4, 1][s] * (multi ? 0.7 : 1), dc = [-5, 1, 4][s] * (multi ? 0.6 : 1), dx = [2, 5, 12][s];
   S.cash += pay; S.csat += dc; S.xp += dx; a.pay += pay; a.csat += dc; a.xp += dx;
+  if (steps[a.step].options[k].truck) {
+    S.cash -= TRUCK_COST; a.truck = (a.truck || 0) + 1; a.stepTruck = true;
+    log(`<b>Truck roll</b> · technician sent to ${esc(a.name)}. −${money(TRUCK_COST)}`);
+    truckRoll();
+  } else a.stepTruck = false;
   if (s === 0) S.missed = [{ id: sc.id, topic: sc.topic, lesson: sc.lesson }, ...S.missed.filter(m => m.id !== sc.id)].slice(0, 8);
   if (a.step === steps.length - 1) {
     S.handled++; S.seen[sc.id] = (S.seen[sc.id] || 0) + 1;
@@ -286,12 +296,12 @@ function renderLive() {
   let verdict = '<div class="sub">What do you do next?</div>';
   if (done && !last) {
     const s = st.options[a.choice].s;
-    verdict = `<div class="verdict s${s}"><strong>${RATING[s]}</strong><p class="sub">Step ${a.step + 1} of ${steps.length}. Continue to see what happens next.</p></div>`;
+    verdict = `<div class="verdict s${s}"><strong>${RATING[s]}</strong>${a.stepTruck ? `<p class="sub mono">Truck roll −${money(TRUCK_COST)}</p>` : ''}<p class="sub">Step ${a.step + 1} of ${steps.length}. Continue to see what happens next.</p></div>`;
   } else if (done) {
     const ss = a.picks.map(p => p.s), overall = ss.every(x => x === 2) ? 2 : ss.includes(0) ? 0 : 1;
     const title = multi ? `${ss.filter(x => x === 2).length} of ${steps.length} steps best` : RATING[overall];
     verdict = `<div class="verdict s${overall}"><strong>${title}</strong>${sc.lesson ? `<p>${esc(sc.lesson)}</p>` : ''}
-      <p class="sub mono">${a.pay ? '+' + money(a.pay) + ' · ' : ''}CSAT ${a.csat >= 0 ? '+' : '−'}${Math.abs(Math.round(a.csat * 10) / 10)} · XP +${a.xp}</p></div>`;
+      <p class="sub mono">${a.pay ? '+' + money(a.pay) + ' · ' : ''}${a.truck ? `Truck roll${a.truck > 1 ? 's' : ''} −${money(TRUCK_COST * a.truck)} · ` : ''}CSAT ${a.csat >= 0 ? '+' : '−'}${Math.abs(Math.round(a.csat * 10) / 10)} · XP +${a.xp}</p></div>`;
   }
   const tools = [];
   if (!done && S.up.kb) tools.push(`<button class="btn" id="kbBtn" ${a.struck != null ? 'disabled' : ''}>Check KB</button>`);
@@ -532,11 +542,16 @@ function draw(t) {
   const poles = [];
   for (let i = nw; i < n; i++) { const x = xs(i), base = ground(x); poles.push([x, base - 46, base]) }
   if (poles.length) {
+    // The wire sags between attachment points. Sample it into one polyline so the light pulse can ride the same path.
+    const half = w / n / 2, first = poles[0], lastP = poles[poles.length - 1];
+    const anchors = [[first[0] - half, first[1] + 8], ...poles.map(([x, top]) => [x, top + 3]), [lastP[0] + half, lastP[1] + 8]];
+    const path = [anchors[0]];
+    for (let k = 1; k < anchors.length; k++) {
+      const [ax, ay] = anchors[k - 1], [bx, by] = anchors[k], mx = (ax + bx) / 2, my = Math.max(ay, by) + Math.min(16, (bx - ax) * 0.12);
+      for (let j = 1; j <= 16; j++) { const u = j / 16, v = 1 - u; path.push([v * v * ax + 2 * v * u * mx + u * u * bx, v * v * ay + 2 * v * u * my + u * u * by]) }
+    }
     cx.strokeStyle = tok('--fiber'); cx.lineWidth = 1.5; cx.beginPath();
-    const first = poles[0], lastP = poles[poles.length - 1];
-    cx.moveTo(first[0] - w / n / 2, first[1] + 6);
-    for (const [x, top] of poles) cx.quadraticCurveTo(x - w / n / 4, top + 14, x, top + 3);
-    cx.quadraticCurveTo(lastP[0] + w / n / 4, lastP[1] + 14, lastP[0] + w / n / 2, lastP[1] + 6);
+    path.forEach(([x, y], k) => k ? cx.lineTo(x, y) : cx.moveTo(x, y));
     cx.stroke();
     for (const [x, top, base] of poles) {
       cx.strokeStyle = tok('--ink'); cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(x, base); cx.lineTo(x, top); cx.stroke();
@@ -544,12 +559,94 @@ function draw(t) {
       cx.fillStyle = tok('--fiber'); cx.fillRect(x - 4, top + 10, 8, 6);
     }
     if (!reduced && !S.paused) {
-      const span = (lastP[0] - first[0]) + w / n, p = (t / 1800) % 1, px = first[0] - w / n / 2 + p * span;
-      cx.fillStyle = tok('--fiber'); cx.beginPath(); cx.arc(px, first[1] + 6, 2.5, 0, 7); cx.fill();
+      // Walk the polyline by distance so the pulse moves at a steady speed and stays on the wire
+      const seg = []; let total = 0;
+      for (let k = 1; k < path.length; k++) { const d = Math.hypot(path[k][0] - path[k - 1][0], path[k][1] - path[k - 1][1]); seg.push(d); total += d }
+      let d = ((t / 1800) % 1) * total, k = 0;
+      while (k < seg.length - 1 && d > seg[k]) { d -= seg[k]; k++ }
+      const f = seg[k] ? d / seg[k] : 0, [x1, y1] = path[k], [x2, y2] = path[k + 1];
+      const px = x1 + (x2 - x1) * f, py = y1 + (y2 - y1) * f;
+      cx.fillStyle = tok('--fiber'); cx.shadowColor = tok('--fiber'); cx.shadowBlur = 6;
+      cx.beginPath(); cx.arc(px, py, 2.5, 0, 7); cx.fill(); cx.shadowBlur = 0;
     }
   }
   if (S.towers > 12) { cx.fillStyle = tok('--muted'); cx.font = '12px ' + tok('--mono'); cx.fillText('+' + (S.towers - 12) + ' more sites', 8, 16) }
   requestAnimationFrame(draw);
+}
+
+// ---------- Truck roll: a wireframe truck drives across the screen with a −$300 splash ----------
+const trucks = [];
+let truckCv = null, truckCx = null, truckRaf = 0;
+function truckRoll() {
+  if (!truckCv) {
+    truckCv = document.createElement('canvas');
+    truckCv.setAttribute('aria-hidden', 'true');
+    truckCv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:4';
+    document.body.appendChild(truckCv); truckCx = truckCv.getContext('2d');
+  }
+  trucks.push({ t0: performance.now(), lane: trucks.length % 2 });
+  toast(`Truck roll: −${money(TRUCK_COST)}`);
+  if (!truckRaf) truckRaf = requestAnimationFrame(drawTrucks);
+}
+function drawTruck(c, x, y, spin) {
+  // Box truck facing right, drawn as outlines only. (x, y) is the back of the box at ground level.
+  c.beginPath();
+  c.rect(x, y - 72, 112, 58);                                                     // cargo box
+  c.moveTo(x + 112, y - 14); c.lineTo(x + 112, y - 54); c.lineTo(x + 142, y - 54); // cab
+  c.lineTo(x + 162, y - 32); c.lineTo(x + 170, y - 30); c.lineTo(x + 170, y - 14);
+  c.moveTo(x + 118, y - 49); c.lineTo(x + 139, y - 49); c.lineTo(x + 154, y - 33); c.lineTo(x + 118, y - 33); c.closePath(); // window
+  c.moveTo(x - 6, y - 14); c.lineTo(x + 174, y - 14);                             // chassis
+  c.moveTo(x + 8, y - 78); c.lineTo(x + 100, y - 78);                             // ladder rails
+  c.moveTo(x + 8, y - 84); c.lineTo(x + 100, y - 84);
+  for (let r = 14; r <= 96; r += 12) { c.moveTo(x + r, y - 78); c.lineTo(x + r, y - 84) }
+  c.moveTo(x + 20, y - 72); c.lineTo(x + 20, y - 78); c.moveTo(x + 92, y - 72); c.lineTo(x + 92, y - 78);
+  c.stroke();
+  c.save(); c.globalCompositeOperation = 'destination-over'; c.fillStyle = 'rgba(9, 9, 9, .9)'; // dark body behind the lines keeps page text from showing through
+  c.beginPath(); c.rect(x, y - 72, 112, 58); c.moveTo(x + 112, y - 14); c.lineTo(x + 112, y - 54); c.lineTo(x + 142, y - 54); c.lineTo(x + 162, y - 32); c.lineTo(x + 170, y - 30); c.lineTo(x + 170, y - 14); c.closePath(); c.fill(); c.restore();
+  for (const wx of [x + 32, x + 140]) {                                            // wheels with turning spokes
+    c.beginPath(); c.arc(wx, y - 9, 11, 0, 7); c.moveTo(wx + 4, y - 9); c.arc(wx, y - 9, 4, 0, 7); c.stroke();
+    c.beginPath();
+    for (let s = 0; s < 3; s++) { const ang = spin + s * 2.094; c.moveTo(wx + Math.cos(ang) * 4, y - 9 + Math.sin(ang) * 4); c.lineTo(wx + Math.cos(ang) * 10, y - 9 + Math.sin(ang) * 10) }
+    c.stroke();
+  }
+  c.save(); c.font = '11px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono'); c.fillStyle = c.strokeStyle;
+  c.fillText('TRUCK ROLL', x + 18, y - 38); c.restore();
+}
+function drawSplash(c, x, y, k, color) {
+  // k runs 0 → 1: pop in, hold, float up and fade
+  const pop = k < .15 ? k / .15 : 1, scale = .6 + .4 * (1 - Math.pow(1 - pop, 3)) + (k < .25 ? Math.sin(k / .25 * Math.PI) * .12 : 0);
+  const alpha = k > .7 ? 1 - (k - .7) / .3 : 1, rise = k * 40;
+  c.save(); c.globalAlpha = Math.max(0, alpha); c.translate(x, y - rise); c.scale(scale, scale);
+  c.beginPath();
+  for (let i = 0; i < 24; i++) { const r = i % 2 ? 46 : 74, ang = i / 24 * Math.PI * 2 + .13; c[i ? 'lineTo' : 'moveTo'](Math.cos(ang) * r * 1.35, Math.sin(ang) * r * .8) }
+  c.closePath(); c.fillStyle = 'rgba(255, 96, 46, .12)'; c.fill(); c.strokeStyle = color; c.lineWidth = 2; c.stroke();
+  c.fillStyle = color; c.font = '500 40px ' + getComputedStyle(document.documentElement).getPropertyValue('--display');
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('−$' + TRUCK_COST, 0, 2);
+  c.restore();
+}
+function drawTrucks(now) {
+  const W = innerWidth, H = innerHeight, dpr = devicePixelRatio || 1;
+  if (truckCv.width !== Math.round(W * dpr) || truckCv.height !== Math.round(H * dpr)) { truckCv.width = Math.round(W * dpr); truckCv.height = Math.round(H * dpr) }
+  const c = truckCx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  const css = getComputedStyle(document.documentElement), ink = css.getPropertyValue('--ink').trim(), warm = css.getPropertyValue('--warm').trim();
+  const DRIVE = reduced ? 0 : 4200, SPLASH = 1600, SPLASH_AT = DRIVE * .45; // splash as the truck reaches mid-screen
+  for (let i = trucks.length - 1; i >= 0; i--) {
+    const tr = trucks[i], el = now - tr.t0, y = H * (tr.lane ? .62 : .8);
+    if (el > Math.max(DRIVE, SPLASH_AT + SPLASH)) { trucks.splice(i, 1); continue }
+    let splashX = W / 2;
+    if (DRIVE) {
+      const k = el / DRIVE, e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const x = -200 + (W + 400) * e, bounce = Math.abs(Math.sin(el / 90)) * 1.5;
+      c.strokeStyle = ink; c.lineWidth = 1.6; c.shadowColor = 'rgba(255,255,255,.35)'; c.shadowBlur = 6;
+      drawTruck(c, x, y - bounce, el / 60);
+      c.shadowBlur = 0;
+      c.strokeStyle = 'rgba(255,255,255,.25)'; c.setLineDash([6, 8]); c.beginPath(); c.moveTo(Math.max(0, x - 60), y); c.lineTo(x - 10, y); c.stroke(); c.setLineDash([]);
+      splashX = Math.min(W - 120, Math.max(120, x + 85));
+    }
+    if (el >= SPLASH_AT && el < SPLASH_AT + SPLASH) drawSplash(c, splashX, y - 130, (el - SPLASH_AT) / SPLASH, warm);
+  }
+  truckRaf = trucks.length ? requestAnimationFrame(drawTrucks) : 0;
+  if (!trucks.length) c.clearRect(0, 0, W, H);
 }
 
 // ---------- Events ----------

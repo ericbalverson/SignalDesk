@@ -521,14 +521,16 @@ function draw(t) {
     cx.globalAlpha = i < lit ? 0.9 : 0.35; cx.fillRect(x, y, 4, 3); cx.globalAlpha = 1;
   }
   const n = Math.min(S.towers, 12), nf = Math.round(n * S.set.fiber / 100), nw = n - nf;
-  const xs = i => w * (i + 0.5) / n;
+  // Slots left to right: wireless towers, company HQ, then fiber poles. HQ feeds the fiber and backhauls the towers.
+  const slots = n + 1, span = w / slots, xs = i => span * (i + 0.5);
+  const hqX = xs(nw), hqBase = ground(hqX);
   // wireless towers on the left
   for (let i = 0; i < nw; i++) {
     const x = xs(i), base = ground(x), top = base - 70;
     if (!reduced && !S.paused) for (let k = 0; k < 2; k++) {
       const p = ((t / 2600 + k / 2 + i * 0.17) % 1);
       cx.strokeStyle = tok('--accent'); cx.globalAlpha = (1 - p) * 0.5; cx.lineWidth = 1.5;
-      cx.beginPath(); cx.arc(x, top + 6, 10 + p * Math.min(90, w / n * 0.6), Math.PI * 1.05, Math.PI * 1.95); cx.stroke();
+      cx.beginPath(); cx.arc(x, top + 6, 10 + p * Math.min(90, span * 0.6), Math.PI * 1.05, Math.PI * 1.95); cx.stroke();
     }
     cx.globalAlpha = 1; cx.strokeStyle = tok('--ink'); cx.lineWidth = 1.5; cx.beginPath();
     cx.moveTo(x - 9, base); cx.lineTo(x, top); cx.lineTo(x + 9, base);
@@ -538,13 +540,20 @@ function draw(t) {
     cx.fillStyle = tok('--bad'); cx.globalAlpha = reduced || Math.floor(t / 900) % 2 ? 1 : 0.25;
     cx.beginPath(); cx.arc(x, top - 2, 2.5, 0, 7); cx.fill(); cx.globalAlpha = 1;
   }
-  // fiber poles on the right, strung together
+  // microwave backhaul from HQ to the nearest tower
+  if (nw) {
+    const tx = xs(nw - 1), ty = ground(tx) - 64;
+    cx.save(); cx.strokeStyle = tok('--accent'); cx.globalAlpha = .45; cx.lineWidth = 1; cx.setLineDash([3, 4]);
+    cx.lineDashOffset = reduced || S.paused ? 0 : -t / 60;
+    cx.beginPath(); cx.moveTo(hqX - 12, hqBase - 48); cx.lineTo(tx, ty); cx.stroke(); cx.restore();
+  }
+  // fiber poles on the right, strung from HQ to a customer's home
   const poles = [];
-  for (let i = nw; i < n; i++) { const x = xs(i), base = ground(x); poles.push([x, base - 46, base]) }
+  for (let i = nw + 1; i <= n; i++) { const x = xs(i), base = ground(x); poles.push([x, base - 46, base]) }
   if (poles.length) {
     // The wire sags between attachment points. Sample it into one polyline so the light pulse can ride the same path.
-    const half = w / n / 2, first = poles[0], lastP = poles[poles.length - 1];
-    const anchors = [[first[0] - half, first[1] + 8], ...poles.map(([x, top]) => [x, top + 3]), [lastP[0] + half, lastP[1] + 8]];
+    const lastP = poles[poles.length - 1], homeX = Math.min(w - 14, lastP[0] + span * 0.55), homeBase = ground(homeX);
+    const anchors = [[hqX + 20, hqBase - 27], ...poles.map(([x, top]) => [x, top + 3]), [homeX, homeBase - 17]];
     const path = [anchors[0]];
     for (let k = 1; k < anchors.length; k++) {
       const [ax, ay] = anchors[k - 1], [bx, by] = anchors[k], mx = (ax + bx) / 2, my = Math.max(ay, by) + Math.min(16, (bx - ax) * 0.12);
@@ -558,6 +567,11 @@ function draw(t) {
       cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x - 8, top + 3); cx.lineTo(x + 8, top + 3); cx.stroke();
       cx.fillStyle = tok('--fiber'); cx.fillRect(x - 4, top + 10, 8, 6);
     }
+    // the customer's home at the end of the line
+    cx.fillStyle = tok('--sky'); cx.strokeStyle = tok('--ink'); cx.lineWidth = 1.5; cx.beginPath();
+    cx.moveTo(homeX - 10, homeBase); cx.lineTo(homeX - 10, homeBase - 10); cx.lineTo(homeX, homeBase - 18); cx.lineTo(homeX + 10, homeBase - 10); cx.lineTo(homeX + 10, homeBase); cx.closePath();
+    cx.fill(); cx.stroke();
+    cx.fillStyle = tok('--warm'); cx.fillRect(homeX - 5, homeBase - 8, 4, 4);
     if (!reduced && !S.paused) {
       // Walk the polyline by distance so the pulse moves at a steady speed and stays on the wire
       const seg = []; let total = 0;
@@ -569,6 +583,24 @@ function draw(t) {
       cx.fillStyle = tok('--fiber'); cx.shadowColor = tok('--fiber'); cx.shadowBlur = 6;
       cx.beginPath(); cx.arc(px, py, 2.5, 0, 7); cx.fill(); cx.shadowBlur = 0;
     }
+  }
+  // company HQ: drawn last so the building sits in front of the wire and backhaul
+  {
+    const x = hqX, b = hqBase, top = b - 34;
+    cx.fillStyle = tok('--sky'); cx.strokeStyle = tok('--ink'); cx.lineWidth = 1.5;
+    cx.fillRect(x - 20, top, 40, 34); cx.strokeRect(x - 20, top, 40, 34);
+    cx.beginPath(); cx.moveTo(x - 23, top); cx.lineTo(x + 23, top); cx.stroke();                     // roofline
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {                                          // windows, a few lit
+      const on = ((r * 4 + c) * 7 + Math.floor(reduced ? 0 : t / 2400)) % 5 !== 0;
+      cx.fillStyle = on ? tok('--warm') : tok('--hill'); cx.fillRect(x - 15 + c * 8, top + 6 + r * 9, 5, 5);
+    }
+    cx.strokeRect(x - 4, b - 9, 8, 9);                                                                 // door
+    cx.beginPath(); cx.moveTo(x - 12, top); cx.lineTo(x - 12, top - 14); cx.stroke();                 // mast and dish
+    cx.beginPath(); cx.arc(x - 12, top - 14, 4, Math.PI * 0.6, Math.PI * 1.6); cx.stroke();
+    cx.beginPath(); cx.moveTo(x + 12, top); cx.lineTo(x + 12, top - 10); cx.stroke();
+    cx.fillStyle = tok('--accent'); cx.globalAlpha = reduced || Math.floor(t / 900) % 2 ? 1 : 0.3;
+    cx.beginPath(); cx.arc(x + 12, top - 12, 2, 0, 7); cx.fill(); cx.globalAlpha = 1;
+    cx.fillStyle = tok('--ink'); cx.font = '9px ' + tok('--mono'); cx.textAlign = 'center'; cx.fillText('HQ', x + 2, top - 4); cx.textAlign = 'left';
   }
   if (S.towers > 12) { cx.fillStyle = tok('--muted'); cx.font = '12px ' + tok('--mono'); cx.fillText('+' + (S.towers - 12) + ' more sites', 8, 16) }
   requestAnimationFrame(draw);

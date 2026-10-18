@@ -514,7 +514,7 @@ function draw(t) {
   const ground = x => h - 26 - Math.sin(x / w * Math.PI * 3) * 8;
   cx.fillStyle = tok('--hill'); cx.beginPath(); cx.moveTo(0, h);
   for (let x = 0; x <= w; x += 8) cx.lineTo(x, ground(x)); cx.lineTo(w, h); cx.fill();
-  const lit = Math.floor(S.subs), shown = Math.min(240, Math.max(lit + 20, 60));
+  const lit = Math.floor(S.subs), shown = Math.min(150, Math.max(lit + 20, 60));
   for (let i = 0; i < shown; i++) {
     const x = HOUSES[i][0] * w, y = ground(x) + 4 + HOUSES[i][1] * 14;
     cx.fillStyle = i < lit ? tok('--warm') : tok('--muted');
@@ -524,6 +524,32 @@ function draw(t) {
   // Slots left to right: wireless towers, company HQ, then fiber poles. HQ feeds the fiber and backhauls the towers.
   const slots = n + 1, span = w / slots, xs = i => span * (i + 0.5);
   const hqX = xs(nw), hqBase = ground(hqX);
+  // A few homes around each tower and pole: some up the hill behind, some closer in front.
+  // Seeded by site so they stay put between frames; windows light up as subscribers fill capacity.
+  const rnd = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v) };
+  const homes = [], fill = S.subs / cap();
+  const siteXs = [...Array(nw).keys()].map(i => [xs(i), 'tower', i]).concat([...Array(n - nw).keys()].map(i => [xs(nw + 1 + i), 'pole', nw + 1 + i]));
+  for (const [sx, kind, i] of siteXs) {
+    const count = span > 80 ? 2 + Math.floor(rnd(i, 1) * 2) : 1 + Math.floor(rnd(i, 1) * 2);
+    for (let j = 0; j < count; j++) {
+      const back = rnd(i, 10 + j) < 0.45;
+      let dx = (rnd(i, 20 + j) - 0.5) * span * 0.75;
+      if (Math.abs(dx) < 13) dx = (dx < 0 ? -1 : 1) * (13 + rnd(i, 30 + j) * 6);
+      const hx = Math.max(10, Math.min(w - 10, sx + dx));
+      homes.push({ x: hx, back, kind, site: sx, s: back ? 0.62 + rnd(i, 40 + j) * 0.12 : 0.85 + rnd(i, 40 + j) * 0.2,
+        y: back ? ground(hx) + 1 : ground(hx) + 11 + rnd(i, 50 + j) * 6, wide: rnd(i, 60 + j) > 0.5, lit: rnd(i, 70 + j) < fill });
+    }
+  }
+  const drawHome = hm => {
+    const { x, y, s, back, wide, lit } = hm, hw = (wide ? 10 : 8) * s, wh = 9 * s, rh = 7 * s;
+    cx.globalAlpha = back ? 0.5 : 1;
+    cx.fillStyle = tok('--sky'); cx.strokeStyle = tok('--ink'); cx.lineWidth = back ? 1 : 1.3;
+    cx.beginPath(); cx.moveTo(x - hw, y); cx.lineTo(x - hw, y - wh); cx.lineTo(x, y - wh - rh); cx.lineTo(x + hw, y - wh); cx.lineTo(x + hw, y); cx.closePath();
+    cx.fill(); cx.stroke();
+    cx.fillStyle = lit ? tok('--warm') : tok('--hill'); cx.fillRect(x - hw * 0.55, y - wh * 0.7, 3.5 * s, 3.5 * s);
+    cx.globalAlpha = 1;
+  };
+  homes.filter(hm => hm.back).forEach(drawHome);
   // wireless towers on the left
   for (let i = 0; i < nw; i++) {
     const x = xs(i), base = ground(x), top = base - 70;
@@ -584,6 +610,15 @@ function draw(t) {
       cx.beginPath(); cx.arc(px, py, 2.5, 0, 7); cx.fill(); cx.shadowBlur = 0;
     }
   }
+  // fiber drops from each pole to its nearest front home, then the front homes
+  const front = homes.filter(hm => !hm.back);
+  for (const sx of new Set(front.filter(hm => hm.kind === 'pole').map(hm => hm.site))) {
+    const hm = front.filter(f => f.site === sx).sort((a, b) => Math.abs(a.x - sx) - Math.abs(b.x - sx))[0];
+    const top = ground(sx) - 46 + 12, roof = hm.y - (9 + 7) * hm.s;
+    cx.strokeStyle = tok('--fiber'); cx.globalAlpha = 0.6; cx.lineWidth = 1; cx.beginPath();
+    cx.moveTo(sx, top); cx.quadraticCurveTo((sx + hm.x) / 2, Math.max(top, roof) + 4, hm.x, roof); cx.stroke(); cx.globalAlpha = 1;
+  }
+  front.forEach(drawHome);
   // company HQ: drawn last so the building sits in front of the wire and backhaul
   {
     const x = hqX, b = hqBase, top = b - 34;

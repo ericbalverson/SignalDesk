@@ -503,7 +503,6 @@ ${LOGS.length ? LOGS.map(p => `--- ${p.name} ---\n${p.text}`).join('\n\n') : '(N
 
 // ---------- Horizon scene ----------
 const cv = $('scene'), cx = cv.getContext('2d');
-const HOUSES = Array.from({ length: 240 }, (_, i) => { const r = Math.sin(i * 12.9898) * 43758.5453; return [r - Math.floor(r), Math.abs((Math.sin(i * 78.233) * 9631.7) % 1)] });
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function draw(t) {
   const w = cv.clientWidth, h = cv.clientHeight, dpr = devicePixelRatio || 1;
@@ -514,12 +513,6 @@ function draw(t) {
   const ground = x => h - 26 - Math.sin(x / w * Math.PI * 3) * 8;
   cx.fillStyle = tok('--hill'); cx.beginPath(); cx.moveTo(0, h);
   for (let x = 0; x <= w; x += 8) cx.lineTo(x, ground(x)); cx.lineTo(w, h); cx.fill();
-  const lit = Math.floor(S.subs), shown = Math.min(150, Math.max(lit + 20, 60));
-  for (let i = 0; i < shown; i++) {
-    const x = HOUSES[i][0] * w, y = ground(x) + 4 + HOUSES[i][1] * 14;
-    cx.fillStyle = i < lit ? tok('--warm') : tok('--muted');
-    cx.globalAlpha = i < lit ? 0.9 : 0.35; cx.fillRect(x, y, 4, 3); cx.globalAlpha = 1;
-  }
   const n = Math.min(S.towers, 12), nf = Math.round(n * S.set.fiber / 100), nw = n - nf;
   // Slots left to right: wireless towers, company HQ, then fiber poles. HQ feeds the fiber and backhauls the towers.
   const slots = n + 1, span = w / slots, xs = i => span * (i + 0.5);

@@ -1,11 +1,11 @@
 // Signal Desk glossary. Terms found in a call get a "?" the trainee can click.
 // match: words to look for (longest match wins). cs: true = match exact capitalization (for acronyms).
 // net: only use this entry on "wireless" or "fiber" calls (for terms that mean different things on each).
-// ranges: [label, value, tone] where tone is good, warn or bad. Ranges are rules of thumb; edit them to fit your equipment.
+// ranges (optional): [label, value, tone] where tone is good, warn or bad. Terms with signal levels below (RSSI, SNR,
+// fiber light, latency, retransmits, sector load) take their ranges from SIGNAL_DESK_LEVELS instead.
 window.SIGNAL_DESK_GLOSSARY = [
  { id:'rssi', name:'RSSI (received signal strength)', match:['RSSI'], cs:true,
    what:'How strong the radio signal from the tower is when it reaches the customer’s antenna, measured in dBm. The numbers are negative, and closer to zero is stronger: -55 is stronger than -75.',
-   ranges:[['-50 to -65 dBm','Strong. Should support the full plan.','good'],['-66 to -72 dBm','Fair. Usually fine, with less headroom for bad weather or new obstructions.','warn'],['-73 to -80 dBm','Weak. Expect slowdowns and drops.','bad'],['Below -80 dBm','Unreliable. Needs realignment or a different mount or tower.','bad']],
    csat:'Weak signal causes slow speeds and dropped connections, the two complaints that drive customers to cancel most. Spotting weak RSSI early means you send a tech to fix the real cause instead of asking the customer to reboot again and again.',
    say:'“The signal reaching your antenna is weaker than it should be, so I’d like to send a technician to re-aim it and get you back to full speed.”' },
 
@@ -16,7 +16,6 @@ window.SIGNAL_DESK_GLOSSARY = [
 
  { id:'snr', name:'SNR (signal-to-noise ratio)', match:['SNR','signal-to-noise'], cs:true,
    what:'How much stronger the tower’s signal is than the background radio noise, in dB. A strong signal can still perform badly if the noise is also high.',
-   ranges:[['30 dB and up','Excellent','good'],['25 to 29 dB','Good','good'],['15 to 24 dB','Fair. Speeds may vary.','warn'],['Below 15 dB','Poor. Expect lag, retransmits and drops.','bad']],
    csat:'Low SNR shows up as lag, buffering and video calls freezing, even when speed tests look fine. Customers find this maddening because it’s inconsistent. Escalating interference with the numbers gets it fixed for them and for their neighbors.',
    say:'“Your signal is strong, but there’s a lot of radio interference in your area. I’m sending this to our network team so they can move you to a cleaner channel.”' },
 
@@ -37,7 +36,6 @@ window.SIGNAL_DESK_GLOSSARY = [
 
  { id:'sector', name:'Sector', match:['sector'],
    what:'One antenna on a tower that serves a slice of the area around it, like a slice of pie. Every customer in that slice shares the sector’s capacity.',
-   ranges:[['Under 70% at peak','Healthy','good'],['70 to 85% at peak','Busy','warn'],['Over 85% at peak','Congested. Evening slowdowns likely.','bad']],
    csat:'When a sector is overloaded, everyone on it slows down at the same time each evening. Recognizing the pattern stops CSRs from blaming the customer’s Wi-Fi and gets capacity added.',
    say:'“The equipment serving your area gets very busy in the evenings. I’m reporting it with your test results so our engineers can add capacity.”' },
 
@@ -73,7 +71,6 @@ window.SIGNAL_DESK_GLOSSARY = [
 
  { id:'rx', name:'Rx optical power (fiber light level)', match:['Rx optical power','Rx power','optical power','light level'],
    what:'How much light reaches the customer’s ONT, in dBm. Closer to zero is stronger. Dirty connectors, tight bends and damage lower it.',
-   ranges:[['-8 to -24 dBm','Normal','good'],['-25 to -27 dBm','Marginal. Watch for errors.','warn'],['Below -27 dBm','Failing. Expect drops; send a tech.','bad']],
    csat:'Light levels near the limit cause random drops that customers can’t explain and reboots won’t fix. Catching a falling level and sending a tech to clean or repair the fiber ends the repeat calls.',
    say:'“The light reaching your fiber box is lower than it should be. A technician can clean and test the connection.”' },
 
@@ -129,13 +126,11 @@ window.SIGNAL_DESK_GLOSSARY = [
 
  { id:'latency', name:'Latency and ping', match:['latency','ping'],
    what:'How long data takes to make a round trip, in milliseconds (ms). Low, steady latency matters more than speed for gaming and video calls.',
-   ranges:[['Under 30 ms','Great','good'],['30 to 60 ms','Fine for most uses','good'],['60 to 100 ms','Noticeable in games','warn'],['Spikes over 100 ms','Lag, freezing calls','bad']],
    csat:'Gamers and remote workers notice latency spikes long before slow speeds. Taking latency complaints seriously and checking for interference keeps these customers.',
    say:'“Your speed is fine, but the response time is jumping around. That’s what causes the lag, and I want our network team to look at it.”' },
 
  { id:'retrans', name:'Retransmits', match:['retransmits','retransmissions'],
    what:'Data the radio had to send again because it didn’t arrive cleanly. A high rate wastes capacity and causes lag.',
-   ranges:[['Under 5%','Normal','good'],['5 to 10%','Watch it','warn'],['Over 10%','Problem: interference or a weak link','bad']],
    csat:'High retransmits make a connection feel sluggish even when speed tests look okay. They’re strong evidence to send to the NOC.',
    say:'“A lot of your data is having to be resent, which causes the lag. I’m passing this to our network team.”' },
 
@@ -238,4 +233,22 @@ window.SIGNAL_DESK_GLOSSARY = [
    what:'A visit or remote check to confirm a location has a clear path to a tower before installing.',
    csat:'A survey avoids promising service that can’t be delivered and wasting an install appointment.',
    say:'“Service depends on a clear view to our tower, so the first step is a quick site survey.”' },
+];
+
+// Signal level standards. Operators can change the cutoffs in Setup; these are the defaults.
+// dir 'high': bigger numbers are better (cutoffs go down). dir 'low': smaller is better (cutoffs go up).
+// bands: one more than cutoffs: [label, what it means, tone]. term: glossary entry that shows these ranges.
+window.SIGNAL_DESK_LEVELS = [
+ { id:'rssi', term:'rssi', name:'Wireless signal (RSSI)', unit:'dBm', dir:'high', step:1, cuts:[-65, -72, -80],
+   bands:[['Strong','Should support the full plan.','good'],['Fair','Usually fine, with less headroom for weather or new obstructions.','warn'],['Weak','Expect slowdowns and drops.','bad'],['Unreliable','Needs realignment or a different mount or tower.','bad']] },
+ { id:'snr', term:'snr', name:'Signal-to-noise (SNR)', unit:'dB', dir:'high', step:1, cuts:[30, 25, 15],
+   bands:[['Excellent','Clean link with plenty of margin.','good'],['Good','Normal performance.','good'],['Fair','Speeds may vary.','warn'],['Poor','Expect lag, retransmits and drops.','bad']] },
+ { id:'rx', term:'rx', name:'Fiber light level (Rx)', unit:'dBm', dir:'high', step:0.5, cuts:[-24, -27],
+   bands:[['Normal','Healthy light level.','good'],['Marginal','Watch for errors and drops.','warn'],['Failing','Expect drops. Send a tech to clean and test.','bad']] },
+ { id:'latency', term:'latency', name:'Latency', unit:'ms', dir:'low', step:5, cuts:[30, 60, 100],
+   bands:[['Great','Ideal for gaming and video calls.','good'],['Fine','Fine for most uses.','good'],['Noticeable','Noticeable in games and calls.','warn'],['Lag','Lag and freezing calls.','bad']] },
+ { id:'retrans', term:'retrans', name:'Retransmits', unit:'%', dir:'low', step:1, cuts:[5, 10],
+   bands:[['Normal','Expected on a healthy link.','good'],['Watch','Keep an eye on it.','warn'],['Problem','Interference or a weak link.','bad']] },
+ { id:'load', term:'sector', name:'Sector peak load', unit:'%', dir:'low', step:5, cuts:[70, 85],
+   bands:[['Healthy','Room to grow.','good'],['Busy','Watch evening speeds.','warn'],['Congested','Evening slowdowns likely.','bad']] },
 ];

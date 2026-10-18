@@ -208,6 +208,24 @@ dialog.setup::backdrop { background: rgba(0, 0, 0, .72) }
 .cmd code { white-space: nowrap; flex: 1 }
 .setup-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; padding-top: 16px; border-top: 1px solid var(--line) }
 
+/* Signal level editor and colored readings */
+details.levels > summary { cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
+details.levels > summary::-webkit-details-marker { display: none }
+details.levels > summary .lbl::before { content: "+ "; color: var(--accent) }
+details.levels[open] > summary .lbl::before { content: "− " }
+details.levels[open] { display: grid; gap: 10px }
+.lvgrid { display: grid; gap: 8px }
+.lvrow { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02) }
+.lvrow .nm { font-weight: 500; font-size: 13.5px }
+.lvrow .nm span { color: var(--muted); font-family: var(--mono); font-size: 11px; margin-left: 6px }
+.lvcuts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 12.5px; color: var(--ink-2) }
+.lvcuts label { display: inline-flex; gap: 6px; align-items: center }
+.lvcuts input { width: 78px; padding: 4px 8px; font-family: var(--mono); font-size: 12px }
+.lvcuts .good { color: var(--good) } .lvcuts .warn { color: var(--warm) } .lvcuts .bad { color: var(--bad) }
+.lvrow.invalid { border-color: rgba(255, 128, 137, .6) }
+.lv { border-bottom: 2px solid; padding-bottom: 1px }
+.lv.good { color: var(--good) } .lv.warn { color: var(--warm) } .lv.bad { color: var(--bad) }
+
 /* Glossary terms and info screen */
 .gl { border-bottom: 1px dotted var(--dim); cursor: help; white-space: nowrap }
 .gl i { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 3px; vertical-align: 2px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); font: 600 10px/1 var(--mono); font-style: normal }
@@ -406,6 +424,15 @@ footer.foot p { max-width: 70ch }
         <div class="row" style="justify-content:space-between"><span class="sub" id="foundSum"></span><span class="row"><button class="btn sm" id="selRel">Select relevant</button><button class="btn sm" id="selNone">Clear</button></span></div>
         <div class="found" id="foundList"></div>
       </div>
+    </div>
+
+    <div class="step">
+      <details class="levels" id="levelsBox">
+        <summary><span class="lbl">Signal levels</span> <span class="sub" id="levelsSum">Using the standard cutoffs.</span></summary>
+        <p class="sub">Set the readings your network treats as good, borderline and bad. Calls color readings with these cutoffs, and the glossary shows them.</p>
+        <div class="lvgrid" id="levelsGrid"></div>
+        <div class="row"><button class="btn sm" id="levelsReset">Reset to standard</button><span class="msg" id="levelsMsg"></span></div>
+      </details>
     </div>
 
     <div class="step">

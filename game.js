@@ -312,7 +312,7 @@ function renderLive() {
     <div class="callhead"><h2>On the line · ${esc(a.name)}</h2><span class="tags">${netTag(a.net)}<span class="tag coach">${esc(sc.topic)}</span>${multi ? `<span class="tag">Step ${a.step + 1} of ${steps.length}</span>` : ''}</span></div>
     <p class="quote">“${esc(sc.quotes[a.qi] || sc.quotes[0])}”</p>
     ${acct.length ? `<div class="acct-h">Account &amp; network${sc.plan ? ' · plan ' + esc(sc.plan) : ''}</div>
-    <dl class="acct">${acct.map(([k, v, n]) => `<dt class="${n ? 'new' : ''}">${esc(k)}</dt><dd class="${n ? 'new' : ''}">${esc(v)}</dd>`).join('')}</dl>` : ''}
+    <dl class="acct">${acct.map(([k, v, n]) => `<dt class="${n ? 'new' : ''}">${esc(k)}</dt><dd class="${n ? 'new' : ''}">${rateValue(k, esc(v))}</dd>`).join('')}</dl>` : ''}
     ${hist}
     ${st.say ? `<div class="say">${esc(st.say)}</div>` : ''}
     ${verdict}
@@ -782,8 +782,10 @@ function openTerm(id) {
   $('termTitle').textContent = g.name;
   $('termWhat').textContent = g.what;
   $('termCsat').textContent = g.csat;
-  $('termRangeBox').hidden = !(g.ranges && g.ranges.length);
-  $('termRange').innerHTML = (g.ranges || []).map(([k, v, tone]) => `<div class="${esc(tone || '')}"><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('');
+  const lvl = LEVEL_DEFS.find(d => d.term === id), ranges = lvl ? levelRanges(lvl.id) : g.ranges;
+  $('termRangeBox').hidden = !(ranges && ranges.length);
+  $('termRangeBox').querySelector('.lbl').textContent = lvl && levelsCustom().includes(lvl) ? 'Good and bad readings · set by your operator' : 'Good and bad readings';
+  $('termRange').innerHTML = (ranges || []).map(([k, v, tone]) => `<div class="${esc(tone || '')}"><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('');
   $('termSayBox').hidden = !g.say; $('termSay').textContent = g.say || '';
   if (!$('term').open) {
     termWasPaused = S.paused; S.paused = true; renderControls(); renderQueue();
@@ -798,6 +800,79 @@ function closeTerm() {
 $('termClose').onclick = closeTerm;
 $('term').addEventListener('cancel', e => { e.preventDefault(); closeTerm() });
 $('term').addEventListener('click', e => { if (e.target === $('term')) closeTerm() });
+
+// ---------- Signal levels: operator-adjustable cutoffs for good / borderline / bad readings ----------
+const LEVEL_DEFS = window.SIGNAL_DESK_LEVELS || [];
+const LEVEL_BY_ID = new Map(LEVEL_DEFS.map(d => [d.id, d]));
+const defaultCuts = () => Object.fromEntries(LEVEL_DEFS.map(d => [d.id, [...d.cuts]]));
+function cutsFor(id) {
+  const d = LEVEL_BY_ID.get(id), c = LIB.levels && LIB.levels[id];
+  return Array.isArray(c) && c.length === d.cuts.length && cutsValid(d, c) ? c : d.cuts;
+}
+const cutsValid = (d, c) => c.every(Number.isFinite) && c.every((x, i) => i === 0 || (d.dir === 'high' ? x < c[i - 1] : x > c[i - 1]));
+const fmtNum = n => String(n).replace('-', '−');
+const withUnit = (n, u) => fmtNum(n) + (u === '%' ? '%' : ' ' + u);
+function levelBand(id, v) {
+  const d = LEVEL_BY_ID.get(id); if (!d || !Number.isFinite(v)) return null;
+  const c = cutsFor(id); let i = c.findIndex(x => d.dir === 'high' ? v >= x : v < x); if (i < 0) i = c.length;
+  const [label, desc, tone] = d.bands[i]; return { label, desc, tone };
+}
+function levelRanges(id) {
+  const d = LEVEL_BY_ID.get(id), c = cutsFor(id), u = d.unit, n = c.length;
+  const up = u === 'dBm' ? 'stronger' : 'higher', below = u === 'dBm' ? 'Weaker than' : 'Below';
+  return d.bands.map(([label, desc, tone], i) => [
+    d.dir === 'high'
+      ? (i === 0 ? `${withUnit(c[0], u)} or ${up}` : i === n ? `${below} ${withUnit(c[n - 1], u)}` : `${fmtNum(c[i])} to ${withUnit(c[i - 1], u)}`)
+      : (i === 0 ? `Under ${withUnit(c[0], u)}` : i === n ? `${withUnit(c[n - 1], u)} and up` : `${fmtNum(c[i - 1])} to ${withUnit(c[i], u)}`),
+    `${label}. ${desc}`, tone]);
+}
+const levelsCustom = () => LEVEL_DEFS.filter(d => cutsFor(d.id).some((x, i) => x !== d.cuts[i]));
+// Color readings in the account panel by the operator's cutoffs. Works on already-escaped text.
+function rateValue(label, html) {
+  const L = label.toLowerCase();
+  const wrap = (m, v, id) => { const b = levelBand(id, v); return b ? `<span class="lv ${b.tone}" title="${esc(LEVEL_BY_ID.get(id).name)}: ${esc(b.label)}">${m}</span>` : m };
+  const dbm = /(-\d+(?:\.\d+)?) dBm/g;
+  if (/\brx\b|optical|light/.test(L)) html = html.replace(dbm, (m, n) => wrap(m, +n, 'rx'));
+  else if (/rssi|signal|cpe/.test(L)) html = html.replace(dbm, (m, n) => wrap(m, +n, 'rssi'));
+  else html = html.replace(/Rx (-\d+(?:\.\d+)?) dBm/g, (m, n) => wrap(m, +n, 'rx'));
+  html = html.replace(/SNR (\d+(?:\.\d+)?) dB/g, (m, n) => wrap(m, +n, 'snr'));
+  if (/snr/.test(L)) html = html.replace(/^(\d+(?:\.\d+)?) dB/, (m, n) => wrap(m, +n, 'snr'));
+  if (/retransmit/.test(L)) html = html.replace(/(\d+(?:\.\d+)?)%/, (m, n) => wrap(m, +n, 'retrans'));
+  if (/load|sector peak/.test(L)) html = html.replace(/(\d+(?:\.\d+)?)%/, (m, n) => wrap(m, +n, 'load'));
+  return html.replace(/(\d+)(?:-(\d+))? ms\b/g, (m, a, b) => wrap(m, Math.max(+a, +(b || a)), 'latency'));
+}
+
+// Setup editor
+function renderLevelsEditor(cuts) {
+  $('levelsGrid').innerHTML = LEVEL_DEFS.map(d => {
+    const c = cuts[d.id], rel = d.dir === 'high' ? '≥' : '<';
+    const parts = d.bands.map(([label, , tone], i) => i < c.length
+      ? `<label><span class="${tone}">${esc(label)}</span> ${rel} <input class="field" type="number" step="${d.step}" data-lv="${d.id}" data-i="${i}" value="${c[i]}" aria-label="${esc(d.name)}, ${esc(label)} cutoff in ${esc(d.unit)}"></label>`
+      : `<span>${d.dir === 'high' ? 'below that' : 'otherwise'}: <span class="${tone}">${esc(label)}</span></span>`).join('');
+    return `<div class="lvrow" data-row="${d.id}"><div class="nm">${esc(d.name)}<span>${esc(d.unit)}</span></div><div class="lvcuts">${parts}</div></div>`;
+  }).join('');
+  checkLevelsEditor();
+}
+function readLevelsEditor() {
+  const cuts = defaultCuts(); let ok = true;
+  $('levelsGrid').querySelectorAll('[data-lv]').forEach(inp => { cuts[inp.dataset.lv][+inp.dataset.i] = inp.value === '' ? NaN : +inp.value });
+  for (const d of LEVEL_DEFS) {
+    const valid = cutsValid(d, cuts[d.id]);
+    $('levelsGrid').querySelector(`[data-row="${d.id}"]`).classList.toggle('invalid', !valid);
+    if (!valid) ok = false;
+  }
+  return { ok, cuts };
+}
+function checkLevelsEditor() {
+  const { ok, cuts } = readLevelsEditor();
+  const changed = LEVEL_DEFS.filter(d => cuts[d.id].some((x, i) => x !== d.cuts[i])).map(d => d.name.replace(/.*\((.+)\)/, '$1'));
+  $('levelsSum').textContent = changed.length ? `Custom cutoffs: ${changed.join(', ')}.` : 'Using the standard cutoffs.';
+  if (ok) msg('levelsMsg', '', true);
+  else msg('levelsMsg', 'Each cutoff must be worse than the one before it. Fix the rows outlined in red.', false);
+  return ok;
+}
+$('levelsGrid').addEventListener('input', checkLevelsEditor);
+$('levelsReset').onclick = () => renderLevelsEditor(defaultCuts());
 
 // ---------- Company knowledge in the library ----------
 function renderKb() {
@@ -841,6 +916,8 @@ function openSetup(first) {
   $('siteMsg').textContent = ''; $('siteAlt').hidden = true; $('faqText').value = ''; $('siteJson').value = '';
   $('setupCancel').textContent = first ? 'Skip for now' : 'Cancel';
   $('setupNote').textContent = (LIB.kb || []).length ? `${LIB.kb.length} company questions already loaded.` : '';
+  renderLevelsEditor(Object.fromEntries(LEVEL_DEFS.map(d => [d.id, [...cutsFor(d.id)]])));
+  $('levelsBox').open = false;
   $('setup').showModal();
 }
 function closeSetup() {
@@ -918,6 +995,9 @@ $('selNone').onclick = () => { setupFound.forEach(e => e.on = false); renderFoun
 $('setupCancel').onclick = closeSetup;
 $('setup').addEventListener('cancel', e => { e.preventDefault(); closeSetup() });
 $('setupStart').onclick = () => {
+  const lv = readLevelsEditor();
+  if (!lv.ok) { $('levelsBox').open = true; checkLevelsEditor(); $('levelsGrid').querySelector('.invalid input')?.focus(); return }
+  LIB.levels = Object.fromEntries(LEVEL_DEFS.filter(d => lv.cuts[d.id].some((x, i) => x !== d.cuts[i])).map(d => [d.id, lv.cuts[d.id]]));
   S.set.fiber = +($('setupMix').dataset.val ?? S.set.fiber);
   S.trainee = $('setupTrainee').value.trim();
   const picked = setupFound.filter(e => e.on).map(({ on, relevant, ...e }) => e);

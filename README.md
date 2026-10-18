@@ -27,7 +27,7 @@ Truck rolls are detected from the answer's wording. To set one explicitly, add `
 Technical terms in a call (RSSI, SNR, ONT, PoE injector, CGNAT and others, 46 in all) are marked with a small **?**. Clicking one, or pressing Enter on it, opens an info screen and pauses the game. The screen covers:
 
 - what the term means
-- good and bad readings, where they apply (for example RSSI in dBm or fiber light levels)
+- good and bad readings, where they apply (for example RSSI in dBm or fiber light levels), using the operator's signal levels from Setup
 - why it matters to the customer and to satisfaction
 - how to explain it to a customer on a call
 
@@ -40,6 +40,7 @@ Terms live in [`glossary.js`](glossary.js). Each entry has the words to match (`
 The first time the game opens, the operator sees a setup screen. It opens again from the **Setup** button at the top. Choose:
 
 - **Network**: wireless only, a blend, or fiber only.
+- **Signal levels**: open this section to set the cutoffs your network uses for six readings: wireless signal (RSSI), signal-to-noise (SNR), fiber light level (Rx), latency, retransmits and sector peak load. Each reading has bands like Strong, Fair, Weak and Unreliable. Readings in the account panel are colored green, orange or red by these cutoffs, and the glossary shows the operator's ranges. Each cutoff must be worse than the one before it, and **Reset to standard** restores the defaults. The defaults live in `SIGNAL_DESK_LEVELS` at the bottom of `glossary.js`. Changing cutoffs doesn't change which answer a scenario counts as best.
 - **Training content**:
   - **Built-in calls only**.
   - **Add our FAQ**: upload or paste an FAQ as text, Markdown, CSV (question and answer columns), a saved web page, or JSON. Signal Desk finds the question-and-answer pairs and pre-selects the ones relevant to CSRs (billing, plans, installation, service, account, support). Careers, press and similar entries are left unchecked. You can change the selection before adding.

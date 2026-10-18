@@ -3,43 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Signal Desk</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<title>Signal Desk · Layer 9</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: status strip, training controls, a tower-and-fiber horizon, then queue | live call | shop, with records and the library below. */
-:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); color-scheme: light }
+/* Layer 9 look: near-black ground, translucent hairline cards, light display type with tight tracking,
+   mono uppercase eyebrows, white pill buttons, purple / green / orange signal accents. Dark only, by design. */
 :root {
-  --bg: #edf1f4; --panel: #ffffff; --ink: #15222c; --muted: #5b6c79; --line: #d2dbe2;
-  --accent: #d9530b; --accent-ink: #ffffff; --accent-soft: #fbe6d9;
-  --fiber: #1d6aa8; --fiber-soft: #dceaf6;
-  --good: #2b7a3b; --good-soft: #def1e2; --warn: #a86400; --bad: #b42525; --bad-soft: #f8e0e0;
-  --sky: #dce7ef; --hill: #c3d2dc;
-  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
-  --body: "IBM Plex Sans", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #090909; --panel: #0d0d0f; --raise: rgba(255, 255, 255, .035); --line: rgba(255, 255, 255, .1); --line-2: rgba(255, 255, 255, .18);
+  --ink: #ffffff; --ink-2: rgba(255, 255, 255, .78); --muted: #9aa0a6; --dim: rgba(255, 255, 255, .55);
+  --accent: #be6cf3; --accent-soft: rgba(190, 108, 243, .12);
+  --fiber: #2eeb85; --fiber-soft: rgba(46, 235, 133, .08);
+  --warm: #ff602e; --warm-soft: rgba(255, 96, 46, .1);
+  --good: #2eeb85; --good-soft: rgba(46, 235, 133, .08); --warn: #ff602e; --bad: #ff8089; --bad-soft: rgba(255, 128, 137, .1);
+  --sky: #0b0b0c; --hill: #151518;
+  --display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0e161c; --panel: #15212a; --ink: #e5ecf1; --muted: #8fa2b0; --line: #26363f;
-  --accent: #ff8a3d; --accent-ink: #1b0d03; --accent-soft: #3a2415;
-  --fiber: #6cb4f0; --fiber-soft: #15293a;
-  --good: #5cc775; --good-soft: #17301f; --warn: #f2b84b; --bad: #ff7272; --bad-soft: #3a1b1d;
-  --sky: #122029; --hill: #1c2c36; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #0e161c; --panel: #15212a; --ink: #e5ecf1; --muted: #8fa2b0; --line: #26363f;
-  --accent: #ff8a3d; --accent-ink: #1b0d03; --accent-soft: #3a2415;
-  --fiber: #6cb4f0; --fiber-soft: #15293a;
-  --good: #5cc775; --good-soft: #17301f; --warn: #f2b84b; --bad: #ff7272; --bad-soft: #3a1b1d;
-  --sky: #122029; --hill: #1c2c36; color-scheme: dark }
-
 * { box-sizing: border-box }
 [hidden] { display: none !important }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 32px }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
 .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 16px }
-h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: .01em }
-h1 { font-size: 30px; line-height: 1; text-transform: uppercase }
-h2 { font-size: 20px; text-transform: uppercase; letter-spacing: .04em }
-h3 { font-size: 18px }
+h1, h2, h3 { font-family: var(--display); font-weight: 300; margin: 0; text-wrap: balance; letter-spacing: -.02em }
+h1 { font-size: clamp(30px, 4vw, 42px); line-height: 1.05 }
+h2 { font-size: 22px; font-weight: 400 }
+h3 { font-size: 17px; font-weight: 500; letter-spacing: -.01em }
+.eyebrow, .lbl, .stat .k, .acct-h, .shop-h, th, .lessons .tp, .src { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .18em; color: var(--dim); font-weight: 400 }
 .sub { color: var(--muted); font-size: 13px }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
 button, input, select, textarea { font: inherit; color: inherit }
@@ -47,148 +39,193 @@ button { cursor: pointer }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 p { margin: 0 }
 
-header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between }
-.brand { display: grid; gap: 4px }
-.brand h1 span { color: var(--accent) }
-.stats { display: flex; flex-wrap: wrap; gap: 8px }
-.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; min-width: 112px }
-.stat .k, .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
-.stat .v { font-family: var(--mono); font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums }
-.meter { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; overflow: hidden }
-.meter i { display: block; height: 100%; background: var(--accent); transition: width .3s }
+/* Brand bar */
+.brandbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--line) }
+.logo { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-size: 21px; font-weight: 500; letter-spacing: -.02em; color: var(--ink); text-decoration: none }
+.logo b { display: inline-grid; place-items: center; width: 22px; height: 22px; background: var(--ink); color: var(--bg); border-radius: 5px; font-size: 16px; font-weight: 600 }
+.brandbar .right { display: flex; gap: 8px; align-items: center }
 
-.controls { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px }
-.ctl { display: grid; gap: 4px; min-width: 0 }
+header.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between }
+.brand { display: grid; gap: 8px }
+.brand .sub { font-size: 15px; color: var(--ink-2); max-width: 52ch }
+.stats { display: flex; flex-wrap: wrap; gap: 8px }
+.stat { background: var(--raise); border: 1px solid var(--line); border-radius: 11px; padding: 9px 13px; min-width: 116px }
+.stat .k { font-size: 9.5px; letter-spacing: .14em }
+.stat .v { font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; margin-top: 2px }
+.meter { height: 3px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden }
+.meter i { display: block; height: 100%; background: var(--warm); transition: width .3s }
+#mCsat { background: var(--good) } #mXp { background: var(--accent) }
+
+/* Pills */
+.btn { border: 1px solid var(--line-2); background: transparent; color: var(--ink); border-radius: 999px; padding: 8px 16px; font-weight: 500; font-size: 13.5px; line-height: 1.2 }
+.btn:hover:not(:disabled) { border-color: var(--ink) }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.btn.primary:hover:not(:disabled) { background: rgba(255, 255, 255, .88) }
+.btn:disabled { opacity: .4; cursor: default }
+.btn.sm { padding: 5px 12px; font-size: 12.5px }
+
+.controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; background: var(--raise); border: 1px solid var(--line); border-radius: 11px; padding: 12px 16px }
+.ctl { display: grid; gap: 6px; min-width: 0 }
 .ctl .head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline }
-.ctl .val { font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums }
+.ctl .val { font-family: var(--mono); font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums }
 input[type=range] { accent-color: var(--accent); width: 220px; max-width: 100%; margin: 0 }
 .chips { display: flex; gap: 4px; flex-wrap: wrap }
-.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 1px 10px; font-size: 12px }
-.chip.on { background: var(--ink); color: var(--panel); border-color: var(--ink) }
-.pausebtn { min-width: 112px; font-family: var(--display); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 6px 14px }
-.pausebtn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
-.check { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--ink-2) }
+.chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.pausebtn { min-width: 104px }
+.pausebtn.on { background: var(--warm); color: var(--bg); border-color: var(--warm) }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; color: var(--ink-2) }
 .check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0 }
 
-canvas#scene { width: 100%; height: 120px; display: block; border-radius: 8px; border: 1px solid var(--line) }
+canvas#scene { width: 100%; height: 120px; display: block; border-radius: 11px; border: 1px solid var(--line) }
 
 .grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 300px; gap: 16px; align-items: start }
 @media (max-width: 1020px) { .grid { grid-template-columns: 1fr 1fr } .live { grid-column: 1 / -1; order: -1 } }
 @media (max-width: 640px) { .grid { grid-template-columns: 1fr } }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 12px; min-width: 0 }
+.panel { background: var(--raise); border: 1px solid var(--line); border-radius: 11px; padding: 16px; display: grid; gap: 12px; min-width: 0 }
 .panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap }
 
-.answer { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 14px; font-family: var(--display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; transition: transform .08s }
+.answer { background: var(--ink); color: var(--bg); border: 0; border-radius: 999px; padding: 13px; font-family: var(--display); font-size: 17px; font-weight: 500; letter-spacing: -.01em; transition: transform .08s }
+.answer:hover:not(:disabled) { background: rgba(255, 255, 255, .88) }
 .answer:active { transform: scale(.98) }
-.answer:disabled { opacity: .45; cursor: default }
+.answer:disabled { opacity: .35; cursor: default }
 .queue { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; max-height: 330px; overflow-y: auto }
-.queue li button { width: 100%; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 4px }
-.queue li button:hover { border-color: var(--accent) }
+.queue li button { width: 100%; text-align: left; background: rgba(255, 255, 255, .02); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: grid; gap: 6px }
+.queue li button:hover { border-color: var(--line-2); background: rgba(255, 255, 255, .04) }
 .qrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; align-items: center }
-.tags { display: flex; gap: 4px }
-.tag { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 1px 6px; border-radius: 3px; background: var(--line); color: var(--muted); white-space: nowrap }
-.tag.coach { background: var(--accent-soft); color: var(--accent) }
-.tag.fiber { background: var(--fiber-soft); color: var(--fiber) }
-.pat { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden }
+.tags { display: flex; gap: 4px; flex-wrap: wrap }
+.tag { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap }
+.tag.wireless { color: var(--accent); border-color: rgba(190, 108, 243, .35) }
+.tag.fiber { color: var(--fiber); border-color: rgba(46, 235, 133, .33) }
+.tag.coach { color: var(--warm); border-color: rgba(255, 96, 46, .4); background: var(--warm-soft) }
+.tag.kb { color: var(--ink); border-color: var(--line-2); background: rgba(255, 255, 255, .06) }
+.pat { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden }
 .pat i { display: block; height: 100%; background: var(--good) }
-.pat i.low { background: var(--bad) }
+.pat i.low { background: var(--warm) }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0 }
-.held { font-size: 12px; color: var(--accent); font-weight: 500 }
-.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); max-height: 140px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 8px }
+.held { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--warm) }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); max-height: 140px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 10px }
 .log b { color: var(--ink); font-weight: 500 }
 
 .live { min-height: 420px }
 .idle { display: grid; gap: 10px; color: var(--muted); align-content: center; min-height: 340px; text-align: center; justify-items: center }
-.idle h3 { color: var(--ink); font-size: 24px }
+.idle h3 { color: var(--ink); font-family: var(--display); font-weight: 300; font-size: 28px; letter-spacing: -.02em }
 .idle p { max-width: 42ch }
-.callhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline }
-.quote { font-size: 17px; line-height: 1.45; padding-left: 12px; border-left: 3px solid var(--accent) }
-.acct { font-family: var(--mono); font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 3px 14px; overflow-x: auto; margin: 0 }
-.acct dt { color: var(--muted) }
-.acct dd { margin: 0 }
-.acct .new { color: var(--accent) }
-.acct-h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: -6px }
+.callhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center }
+.quote { font-family: var(--display); font-weight: 300; font-size: 21px; line-height: 1.35; letter-spacing: -.01em; padding-left: 14px; border-left: 2px solid var(--accent) }
+.acct { font-family: var(--mono); font-size: 12px; background: #0b0b0c; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 4px 14px; overflow-x: auto; margin: 0 }
+.acct dt { color: var(--dim) }
+.acct dd { margin: 0; color: var(--ink-2) }
+.acct .new { color: var(--warm) }
+.acct-h { margin-bottom: -6px }
 .hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--muted) }
-.hist b { font-weight: 600 } .hist .s2 { color: var(--good) } .hist .s1 { color: var(--warn) } .hist .s0 { color: var(--bad) }
-.say { background: var(--bg); border-radius: 6px; padding: 10px 12px; border-left: 3px solid var(--fiber) }
+.hist b { font-weight: 500 } .hist .s2 { color: var(--good) } .hist .s1 { color: var(--warm) } .hist .s0 { color: var(--bad) }
+.say { background: rgba(255, 255, 255, .03); border-radius: 9px; padding: 10px 12px; border-left: 2px solid var(--fiber); color: var(--ink-2) }
 .opts { display: grid; gap: 8px }
-.opt { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; grid-template-columns: 22px 1fr; gap: 8px; line-height: 1.4 }
-.opt:hover:not(:disabled) { border-color: var(--accent) }
-.opt .l { font-family: var(--mono); font-weight: 500; color: var(--accent) }
+.opt { text-align: left; background: rgba(255, 255, 255, .02); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; display: grid; grid-template-columns: 22px 1fr; gap: 8px; line-height: 1.45; color: var(--ink) }
+.opt:hover:not(:disabled) { border-color: var(--line-2); background: rgba(255, 255, 255, .045) }
+.opt .l { font-family: var(--mono); color: var(--accent) }
 .opt:disabled { cursor: default }
-.opt.struck { opacity: .4; text-decoration: line-through }
-.opt.best { border-color: var(--good); background: var(--good-soft) }
-.opt.pick.s0 { border-color: var(--bad); background: var(--bad-soft) }
-.opt.pick.s1 { border-color: var(--warn) }
+.opt.struck { opacity: .35; text-decoration: line-through }
+.opt.best { border-color: rgba(46, 235, 133, .45); background: var(--good-soft) }
+.opt.pick.s0 { border-color: rgba(255, 128, 137, .5); background: var(--bad-soft) }
+.opt.pick.s1 { border-color: rgba(255, 96, 46, .5); background: var(--warm-soft) }
 .opt .why { grid-column: 2; font-size: 13px; color: var(--muted) }
-.verdict { border-radius: 6px; padding: 12px; display: grid; gap: 6px }
-.verdict.s2 { background: var(--good-soft) } .verdict.s1 { background: var(--accent-soft) } .verdict.s0 { background: var(--bad-soft) }
-.verdict strong { font-family: var(--display); font-size: 20px; text-transform: uppercase; letter-spacing: .03em }
+.verdict { border-radius: 9px; padding: 12px 14px; display: grid; gap: 6px; border: 1px solid var(--line) }
+.verdict.s2 { background: var(--good-soft); border-color: rgba(46, 235, 133, .3) }
+.verdict.s1 { background: var(--warm-soft); border-color: rgba(255, 96, 46, .3) }
+.verdict.s0 { background: var(--bad-soft); border-color: rgba(255, 128, 137, .3) }
+.verdict strong { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: -.01em }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
-.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 8px 14px; font-weight: 500 }
-.btn:hover:not(:disabled) { border-color: var(--accent) }
-.btn.primary { background: var(--ink); color: var(--panel); border-color: var(--ink) }
-.btn:disabled { opacity: .45; cursor: default }
-.pol { border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: grid; gap: 8px }
-.pol .res { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; font-size: 13px }
-.pol .res div { border-left: 3px solid var(--fiber); padding-left: 10px; white-space: pre-wrap; overflow-wrap: anywhere }
-.pol .res .src { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: normal }
-.field { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px }
-textarea.field { resize: vertical; font-family: var(--mono); font-size: 12.5px }
+.pol { border: 1px solid var(--line); border-radius: 9px; padding: 10px; display: grid; gap: 8px }
+.pol .res { display: grid; gap: 10px; max-height: 260px; overflow-y: auto; font-size: 13px; color: var(--ink-2) }
+.pol .res div { border-left: 2px solid var(--fiber); padding-left: 10px; white-space: pre-wrap; overflow-wrap: anywhere }
+.pol .res .src { white-space: normal; display: block }
+.field { width: 100%; background: #0b0b0c; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; color: var(--ink) }
+.field:focus { border-color: var(--line-2) }
+textarea.field { resize: vertical; font-family: var(--mono); font-size: 12px }
 
 .shop { display: grid; gap: 8px }
-.item { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 10px 12px; display: grid; gap: 2px }
-.item:hover:not(:disabled) { border-color: var(--accent) }
-.item:disabled { cursor: default; opacity: .55 }
+.item { text-align: left; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); border-radius: 9px; padding: 10px 12px; display: grid; gap: 3px; color: var(--ink) }
+.item:hover:not(:disabled) { border-color: var(--line-2); background: rgba(255, 255, 255, .045) }
+.item:disabled { cursor: default; opacity: .45 }
 .item.owned { opacity: 1; border-style: dashed }
-.item .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 600 }
-.item .t .mono { font-weight: 500; color: var(--accent) }
+.item .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 500 }
+.item .t .mono { font-weight: 400; color: var(--warm) }
 .item .d { font-size: 12.5px; color: var(--muted) }
-.shop-h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px }
+.shop-h { margin-top: 4px }
 
 .record { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px }
 @media (max-width: 800px) { .record { grid-template-columns: 1fr } }
 table { width: 100%; border-collapse: collapse; font-size: 13px }
-th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line) }
-td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: middle }
+th { text-align: left; font-size: 10px; padding: 4px 8px 8px 0; border-bottom: 1px solid var(--line) }
+td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--ink-2) }
 td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
-.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 60px }
+.bar { height: 4px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 60px }
 .bar i { display: block; height: 100%; background: var(--good) }
-.bar i.mid { background: var(--warn) } .bar i.lowv { background: var(--bad) }
-.lessons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 13px }
-.lessons li { border-left: 3px solid var(--bad); padding-left: 10px }
-.lessons .tp { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+.bar i.mid { background: var(--warm) } .bar i.lowv { background: var(--bad) }
+.lessons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 13px; color: var(--ink-2) }
+.lessons li { border-left: 2px solid var(--bad); padding-left: 10px }
+.lessons .tp { font-size: 10px }
 
 details.lib > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; list-style: none }
 details.lib > summary::-webkit-details-marker { display: none }
-details.lib > summary h2::before { content: "▸ "; color: var(--accent) }
-details.lib[open] > summary h2::before { content: "▾ " }
-.libgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px }
+details.lib > summary h2::before { content: "+ "; font-family: var(--mono); color: var(--accent) }
+details.lib[open] > summary h2::before { content: "− " }
+.libgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px }
 .box { display: grid; gap: 8px; align-content: start; min-width: 0 }
-.box h3 .n { color: var(--accent); font-family: var(--mono); font-size: 14px; margin-right: 6px }
-.file { position: relative; display: inline-flex; align-items: center; border: 1px dashed var(--muted); border-radius: 6px; padding: 8px 14px; font-weight: 500; cursor: pointer }
-.file:hover, .file:focus-within { border-color: var(--accent); color: var(--accent) }
+.box h3 .n { color: var(--accent); font-family: var(--mono); font-size: 12px; margin-right: 8px }
+.file { position: relative; display: inline-flex; align-items: center; border: 1px dashed var(--line-2); border-radius: 999px; padding: 7px 16px; font-weight: 500; font-size: 13.5px; cursor: pointer }
+.file:hover, .file:focus-within { border-color: var(--ink) }
 .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100% }
-.files { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 12.5px; max-height: 200px; overflow-y: auto }
+.files { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 12.5px; max-height: 200px; overflow-y: auto; color: var(--ink-2) }
 .files li { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 4px }
 .files li span { min-width: 0; overflow-wrap: anywhere }
 .x { border: 0; background: transparent; color: var(--muted); padding: 0 4px; font-size: 16px; line-height: 1 }
 .x:hover { color: var(--bad) }
-.lab { display: grid; gap: 2px; font-size: 12px; color: var(--muted) }
+.lab { display: grid; gap: 4px; font-size: 12px; color: var(--muted) }
 .msg { font-size: 12.5px } .msg.ok { color: var(--good) } .msg.err { color: var(--bad) }
 
-footer.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: 12.5px }
+/* Operator setup */
+dialog.setup { width: min(760px, calc(100% - 32px)); max-height: calc(100% - 32px); background: var(--panel); color: var(--ink); border: 1px solid var(--line-2); border-radius: 14px; padding: 0 }
+dialog.setup::backdrop { background: rgba(0, 0, 0, .72) }
+.setup-in { padding: 24px; display: grid; gap: 18px }
+.setup h2 { font-size: 30px; font-weight: 300 }
+.step { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line) }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px }
+.choice { text-align: left; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); border-radius: 11px; padding: 12px 14px; display: grid; gap: 4px; color: var(--ink) }
+.choice:hover { border-color: var(--line-2) }
+.choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.choice strong { font-weight: 500 }
+.choice span { font-size: 12.5px; color: var(--muted) }
+.found { display: grid; gap: 6px; max-height: 280px; overflow-y: auto; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px }
+.found label { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 13px; color: var(--ink-2); padding-block: 4px; border-bottom: 1px solid var(--line); cursor: pointer }
+.found label:last-child { border-bottom: 0 }
+.found input { accent-color: var(--accent); margin: 3px 0 0 }
+.found .a { display: block; color: var(--muted); font-size: 12px; margin-top: 2px }
+.found .why { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim) }
+.cmd { display: flex; gap: 8px; align-items: center; background: #0b0b0c; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 12px; overflow-x: auto }
+.cmd code { white-space: nowrap; flex: 1 }
+.setup-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; padding-top: 16px; border-top: 1px solid var(--line) }
+
+footer.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: 12.5px; padding-top: 14px; border-top: 1px solid var(--line) }
 footer.foot p { max-width: 70ch }
-.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 8px 16px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 5 }
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 5 }
 .toast.on { opacity: 1 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="brandbar">
+    <span class="logo" aria-label="Layer 9">Layer<b>9</b></span>
+    <div class="right"><button class="btn sm" id="setupBtn">Setup</button></div>
+  </div>
+
   <header class="top">
     <div class="brand">
-      <h1>Signal <span>Desk</span></h1>
+      <div class="eyebrow">CSR training for ISPs</div>
+      <h1>Signal Desk</h1>
       <div class="sub">Run the support desk at a growing ISP. Handle coaching calls well and the network grows.</div>
     </div>
     <div class="stats">
@@ -245,11 +282,19 @@ footer.foot p { max-width: 70ch }
   </section>
 
   <details class="panel lib" id="lib">
-    <summary><h2>Library &amp; progress</h2><span class="sub">Your policies, call logs, custom scenarios and save files</span></summary>
+    <summary><h2>Library &amp; progress</h2><span class="sub">Company knowledge, policies, call logs, custom scenarios and save files</span></summary>
     <div class="libgrid">
       <section class="box">
-        <h3><span class="n">1</span>Policies</h3>
-        <p class="sub">Trainees can search these during calls with the Policies button. They’re also used when building scenarios. Upload text, Markdown or CSV. For PDF or Word files, paste the text.</p>
+        <h3><span class="n">01</span>Company knowledge</h3>
+        <p class="sub">FAQ and website content added in Setup. Each question becomes a knowledge call, and trainees can search it during calls.</p>
+        <ul class="files" id="kbList"></ul>
+        <div class="lab">Share of coaching calls that are knowledge calls: <span class="mono" id="kbShareVal"></span><input type="range" id="kbShare" min="0" max="70" step="5"></div>
+        <div class="row"><button class="btn primary" id="kbSetup">Add FAQ or website</button><button class="btn" id="kbClear">Remove all</button></div>
+      </section>
+
+      <section class="box">
+        <h3><span class="n">02</span>Policies</h3>
+        <p class="sub">Searchable during calls with the Reference button, and used when building scenarios. Upload text, Markdown or CSV. For PDF or Word files, paste the text.</p>
         <label class="file">Upload policy files<input type="file" id="polFile" multiple accept=".txt,.md,.markdown,.csv,text/plain,text/markdown,text/csv"></label>
         <input class="field" id="polName" placeholder="Policy name, e.g. Outage credits">
         <textarea class="field" id="polText" rows="3" placeholder="Or paste policy text here"></textarea>
@@ -258,7 +303,7 @@ footer.foot p { max-width: 70ch }
       </section>
 
       <section class="box">
-        <h3><span class="n">2</span>Call logs to scenarios</h3>
+        <h3><span class="n">03</span>Call logs to scenarios</h3>
         <p class="sub">Logs stay in this tab and are cleared when you close it. Remove customer names, addresses and account numbers before pasting them into any AI tool.</p>
         <label class="file">Upload call logs<input type="file" id="logFile" multiple accept=".txt,.md,.csv,.json,text/plain,text/csv"></label>
         <ul class="files" id="logList"></ul>
@@ -269,12 +314,12 @@ footer.foot p { max-width: 70ch }
         <div class="row"><button class="btn primary" id="genBtn">Build prompt for Claude</button></div>
         <div id="genOut" class="box" hidden>
           <textarea class="field" id="genText" rows="6" readonly></textarea>
-          <div class="row"><button class="btn" id="genCopy">Copy prompt</button><span class="sub">Paste it into Claude, then import the JSON it returns in step 3.</span></div>
+          <div class="row"><button class="btn" id="genCopy">Copy prompt</button><span class="sub">Paste it into Claude, then import the JSON it returns.</span></div>
         </div>
       </section>
 
       <section class="box">
-        <h3><span class="n">3</span>Import scenarios</h3>
+        <h3><span class="n">04</span>Import scenarios</h3>
         <textarea class="field" id="impText" rows="4" placeholder="Paste scenario JSON here"></textarea>
         <div class="row"><button class="btn primary" id="impBtn">Import</button><label class="file">Import .json file<input type="file" id="impFile" accept=".json,application/json"></label></div>
         <p class="msg" id="impMsg"></p>
@@ -284,7 +329,7 @@ footer.foot p { max-width: 70ch }
       </section>
 
       <section class="box">
-        <h3><span class="n">4</span>Trainee progress</h3>
+        <h3><span class="n">05</span>Trainee progress</h3>
         <label class="lab">Trainee name<input class="field" id="trainee" placeholder="e.g. Jordan"></label>
         <p class="sub">Progress saves automatically in this browser. Save a file to move it to another computer or hand it to a trainer.</p>
         <div class="row"><button class="btn primary" id="saveFile">Save progress file</button><label class="file">Load progress file<input type="file" id="loadFile" accept=".json,application/json"></label></div>
@@ -295,15 +340,80 @@ footer.foot p { max-width: 70ch }
   </details>
 
   <footer class="foot">
+    <span class="logo" aria-label="Layer 9" style="font-size:16px">Layer<b style="width:18px;height:18px;font-size:13px">9</b></span>
     <p>Built-in scenarios teach general wireless and fiber support practice. Credits, verification steps and escalation paths vary by company, so follow your own policies on real calls.</p>
   </footer>
 </div>
+
+<dialog class="setup" id="setup" aria-labelledby="setupTitle">
+  <div class="setup-in">
+    <div>
+      <div class="eyebrow">Operator setup</div>
+      <h2 id="setupTitle">Set up this training session</h2>
+      <p class="sub">Choose what trainees practice on. You can come back here any time with the Setup button.</p>
+    </div>
+
+    <div class="step">
+      <div class="lbl">Network</div>
+      <div class="chips" id="setupMix">
+        <button class="chip" data-mix="0">Wireless only</button><button class="chip" data-mix="50">Blend</button><button class="chip" data-mix="100">Fiber only</button>
+      </div>
+      <p class="sub">Fine-tune the ratio later with the Network mix slider.</p>
+    </div>
+
+    <div class="step">
+      <div class="lbl">Training content</div>
+      <div class="choices" id="srcChoices">
+        <button class="choice" data-src="builtin" aria-pressed="true"><strong>Built-in calls only</strong><span>44 wireless, fiber and general support calls.</span></button>
+        <button class="choice" data-src="faq" aria-pressed="false"><strong>Add our FAQ</strong><span>Upload or paste an FAQ. Each question becomes a knowledge call.</span></button>
+        <button class="choice" data-src="site" aria-pressed="false"><strong>Use our website</strong><span>Pull support, billing and service content from your site.</span></button>
+      </div>
+
+      <div class="box" id="faqPane" hidden>
+        <label class="file">Upload FAQ file<input type="file" id="faqFile" multiple accept=".txt,.md,.markdown,.csv,.html,.htm,.json,text/plain,text/markdown,text/csv,text/html,application/json"></label>
+        <textarea class="field" id="faqText" rows="5" placeholder="Or paste your FAQ here. Questions end with a question mark, with the answer underneath."></textarea>
+        <div class="row"><button class="btn" id="faqParse">Find questions</button><span class="sub">Text, Markdown, CSV (question, answer), saved web pages or JSON.</span></div>
+      </div>
+
+      <div class="box" id="sitePane" hidden>
+        <div class="row"><input class="field" id="siteUrl" type="url" placeholder="https://www.your-isp.com" style="flex:1;min-width:200px"><button class="btn" id="siteFetch">Read website</button></div>
+        <p class="msg" id="siteMsg"></p>
+        <div class="box" id="siteAlt" hidden>
+          <p class="sub">Most websites don’t let other pages read them directly. Use one of these instead, then upload the file it makes:</p>
+          <div class="lbl">Option A · Run the included scraper</div>
+          <div class="cmd"><code id="scrapeCmd">python tools/scrape_site.py https://www.your-isp.com</code><button class="btn sm" id="cmdCopy">Copy</button></div>
+          <p class="sub">It reads pages a CSR would use (FAQ, support, billing, plans, outages, policies), skips careers, press and blog pages, follows robots.txt, and saves <span class="mono">site-content.json</span>.</p>
+          <div class="lbl">Option B · Ask Claude to read the site</div>
+          <div class="row"><button class="btn sm" id="sitePrompt">Copy prompt for Claude</button><span class="sub">Save Claude’s reply as a .json file, or paste it below.</span></div>
+          <label class="file">Upload site-content.json<input type="file" id="siteFile" accept=".json,application/json,.html,.htm,text/html"></label>
+          <textarea class="field" id="siteJson" rows="3" placeholder="Or paste the JSON here"></textarea>
+          <div class="row"><button class="btn" id="siteParse">Load pasted content</button></div>
+        </div>
+      </div>
+
+      <div class="box" id="foundBox" hidden>
+        <div class="row" style="justify-content:space-between"><span class="sub" id="foundSum"></span><span class="row"><button class="btn sm" id="selRel">Select relevant</button><button class="btn sm" id="selNone">Clear</button></span></div>
+        <div class="found" id="foundList"></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <label class="lab">Trainee name (optional)<input class="field" id="setupTrainee" placeholder="e.g. Jordan"></label>
+    </div>
+
+    <div class="setup-foot">
+      <span class="sub" id="setupNote"></span>
+      <span class="row"><button class="btn" id="setupCancel">Cancel</button><button class="btn primary" id="setupStart">Start training</button></span>
+    </div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="scenarios/wireless.js"></script>
 <script src="scenarios/fiber.js"></script>
 <script src="scenarios/shared.js"></script>
 <script src="scenarios/multistep.js"></script>
+<script src="knowledge.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

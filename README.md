@@ -1,6 +1,6 @@
-# Signal Desk
+# Signal Desk · Layer 9
 
-An idle tycoon game for training customer service reps (CSRs) at wireless and fiber ISPs.
+An idle tycoon game from Layer 9 for training customer service reps (CSRs) at wireless and fiber ISPs.
 
 You run the support desk at a growing ISP. Subscribers pay you every second. You spend that money on new towers or fiber areas, marketing, staff and tools. Calls come into a queue:
 
@@ -15,6 +15,20 @@ Good answers raise customer satisfaction (CSAT), which grows the subscriber base
 Open `index.html` in a browser. No build step and no server needed.
 
 To host it for a team, turn on GitHub Pages for this repo (Settings → Pages → deploy from the `main` branch, root folder).
+
+## Operator setup
+
+The first time the game opens, the operator sees a setup screen. It opens again from the **Setup** button at the top. Choose:
+
+- **Network**: wireless only, a blend, or fiber only.
+- **Training content**:
+  - **Built-in calls only**.
+  - **Add our FAQ**: upload or paste an FAQ as text, Markdown, CSV (question and answer columns), a saved web page, or JSON. Signal Desk finds the question-and-answer pairs and pre-selects the ones relevant to CSRs (billing, plans, installation, service, account, support). Careers, press and similar entries are left unchecked. You can change the selection before adding.
+  - **Use our website**: enter your site's address. Most websites block other pages from reading them, so you'll usually use one of two fallbacks:
+    - **Run the included scraper**: `python tools/scrape_site.py https://www.your-isp.com`. It needs Python 3.8 or later and nothing else. It reads up to 40 pages a CSR would use, skips careers, press and blog pages, follows robots.txt, pauses between requests, and saves `site-content.json`. Upload that file in Setup. Only scrape sites you own or have permission to use.
+    - **Ask Claude to read the site**: copy the prompt from Setup, paste it into Claude, and paste or upload the JSON it returns.
+
+Each selected FAQ question becomes a **knowledge call**: a customer asks the question and the trainee picks your company's answer from four. The wrong choices are answers to your other FAQ questions. A slider in **Library & progress** sets how many coaching calls are knowledge calls (30% by default). Knowledge calls need at least 4 questions. FAQ answers and website text can also be searched during any call with the **Reference** button, and they're included when building scenario prompts from call logs.
 
 ## Training controls
 
@@ -33,10 +47,11 @@ Each call has three different customer openings and a randomly chosen caller nam
 
 Open **Library & progress** at the bottom of the page.
 
-1. **Policies**: upload text, Markdown or CSV files, or paste text. During a call, trainees can search them with the **Policies** button. Policies are saved in the browser.
-2. **Call logs to scenarios**: upload call logs, then select **Build prompt for Claude**. This builds one prompt with your policies, your logs and the scenario format. Paste it into Claude, and Claude writes scenarios based on your real calls. Logs stay in the open tab and are never sent anywhere by the page. Remove customer names, addresses and account numbers before sharing logs with any AI tool.
-3. **Import scenarios**: paste the JSON Claude returns, or import a `.json` file. Invalid entries are skipped with a reason. You can train on your scenarios alone, export them to share with other trainers, or remove them.
-4. **Trainee progress**: progress saves automatically in the browser. **Save progress file** downloads a `.json` file with the trainee's name. **Load progress file** restores it on any computer. A trainer can collect these files to review progress.
+1. **Company knowledge**: the FAQ questions and website text added in Setup, grouped by source. Remove a source, change the share of knowledge calls, or add more.
+2. **Policies**: upload text, Markdown or CSV files, or paste text. During a call, trainees can search them with the **Reference** button. Policies are saved in the browser.
+3. **Call logs to scenarios**: upload call logs, then select **Build prompt for Claude**. This builds one prompt with your policies, company knowledge, your logs and the scenario format. Paste it into Claude, and Claude writes scenarios based on your real calls. Logs stay in the open tab and are never sent anywhere by the page. Remove customer names, addresses and account numbers before sharing logs with any AI tool.
+4. **Import scenarios**: paste the JSON Claude returns, or import a `.json` file. Invalid entries are skipped with a reason. You can train on your scenarios alone, export them to share with other trainers, or remove them.
+5. **Trainee progress**: progress saves automatically in the browser. **Save progress file** downloads a `.json` file with the trainee's name. **Load progress file** restores it on any computer. A trainer can collect these files to review progress.
 
 ## Writing scenarios by hand
 

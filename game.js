@@ -31,7 +31,7 @@ function norm(sc, custom) {
     options: st.options.map(o => ({ t: String(o.t), s: o.s, why: String(o.why || '') })) }));
   return { id: String(sc.id), net: ['wireless', 'fiber', 'any'].includes(sc.net) ? sc.net : 'any', topic: String(sc.topic),
     caller: sc.caller ? String(sc.caller) : '', plan: String(sc.plan || ''), quotes: (sc.quotes || [sc.quote]).map(String),
-    data: rows(sc.data), steps, lesson: String(sc.lesson || ''), custom };
+    data: rows(sc.data), steps, lesson: String(sc.lesson || ''), custom, kind: sc.kind || '' };
 }
 function validate(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'not a scenario object';
@@ -52,18 +52,19 @@ function validate(raw) {
 }
 const BUILTIN = (window.SIGNAL_DESK_SCENARIOS || []).filter(s => !validate(s)).map(s => norm(s, false));
 
-// ---------- Library (policies + custom scenarios, kept in this browser) ----------
-let LIB = { policies: [], custom: [], onlyCustom: false };
+// ---------- Library (company knowledge, policies, custom scenarios; kept in this browser) ----------
+let LIB = { policies: [], custom: [], onlyCustom: false, kb: [], kbPages: [], setupDone: false };
 try { Object.assign(LIB, JSON.parse(localStorage.getItem(LIB_KEY)) || {}) } catch {}
 let LOGS = []; // call logs live only in this tab
-let POOL = [], BYID = new Map();
+let POOL = [], KBPOOL = [], BYID = new Map();
 function saveLib() {
   try { localStorage.setItem(LIB_KEY, JSON.stringify(LIB)) }
   catch { toast('Browser storage is full. Export your scenarios to keep them.') }
 }
 function rebuildPool() {
   const custom = LIB.custom.filter(s => !validate(s)).map(s => norm(s, true));
-  BYID = new Map(BUILTIN.concat(custom).map(s => [s.id, s]));
+  KBPOOL = Knowledge.toScenarios(LIB.kb || []).map(s => norm(s, false));
+  BYID = new Map(BUILTIN.concat(custom, KBPOOL).map(s => [s.id, s]));
   POOL = LIB.onlyCustom && custom.length ? custom : BUILTIN.concat(custom);
 }
 rebuildPool();
@@ -75,7 +76,7 @@ function fresh() {
     queue: [], active: null, nextId: 1041, callAcc: 0.6, csrAcc: 0,
     stats: {}, netStats: { wireless: { a: 0, c: 0 }, fiber: { a: 0, c: 0 } }, seen: {}, missed: [], log: [],
     handled: 0, abandoned: 0, paused: false, trainee: '', savedAt: null,
-    set: { fiber: 50, pace: 1, hold: true } };
+    set: { fiber: 50, pace: 1, hold: true, kbShare: 30 } };
 }
 function migrate(s) {
   const f = fresh();
@@ -119,9 +120,14 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 function pickScenario(net) {
   const busy = new Set(S.queue.map(q => q.sid).filter(Boolean));
   if (S.active) busy.add(S.active.sid);
+  const kb = KBPOOL.filter(s => !busy.has(s.id));
+  if (kb.length && Math.random() * 100 < S.set.kbShare) return weighted(kb);
   let pool = POOL.filter(s => !busy.has(s.id) && (s.net === net || s.net === 'any'));
   if (!pool.length) pool = POOL.filter(s => !busy.has(s.id));
-  if (!pool.length) return null;
+  if (!pool.length) pool = kb;
+  return pool.length ? weighted(pool) : null;
+}
+function weighted(pool) {
   // Lean toward unseen calls and topics the trainee keeps missing
   const w = pool.map(s => { const st = S.stats[s.topic] || { a: 0, c: 0 }; return (S.seen[s.id] ? 1 : 3) + Math.max(0, st.a - st.c) * 1.5 });
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
@@ -229,7 +235,13 @@ function tick(dt) {
 
 // ---------- Rendering: queue, live call ----------
 let qSig = null, polOpen = false;
-function netTag(net) { return `<span class="tag ${net === 'fiber' ? 'fiber' : ''}">${NET_LABEL[net] || net}</span>` }
+function netTag(net) { return `<span class="tag ${net}">${NET_LABEL[net] || net}</span>` }
+function callTag(q) {
+  const sc = q.sid && BYID.get(q.sid);
+  if (!sc) return '<span class="tag">Routine</span>';
+  if (sc.kind === 'kb') return '<span class="tag kb">Knowledge</span>';
+  return `<span class="tag coach">${sc.steps.length > 1 ? 'Multi-step' : 'Coaching'}</span>`;
+}
 function renderQueue() {
   const sig = S.queue.map(q => q.id).join(',');
   $('qCount').textContent = S.paused ? 'Paused' : S.queue.length + ' waiting';
@@ -239,7 +251,7 @@ function renderQueue() {
   if (sig !== qSig) {
     qSig = sig;
     $('queue').innerHTML = S.queue.length ? S.queue.map(q => `<li><button data-q="${q.id}">
-      <span class="qrow"><span>#${q.id} · ${esc(q.name)}</span><span class="tags">${netTag(q.net)}<span class="tag ${q.sid ? 'coach' : ''}">${q.sid ? (BYID.get(q.sid).steps.length > 1 ? 'Multi-step' : 'Coaching') : 'Routine'}</span></span></span>
+      <span class="qrow"><span>#${q.id} · ${esc(q.name)}</span><span class="tags">${netTag(q.net)}${callTag(q)}</span></span>
       <span class="pat"><i id="p${q.id}"></i></span></button></li>`).join('')
       : '<li class="empty">Phones are quiet. Calls arrive as you add subscribers.</li>';
   }
@@ -283,7 +295,7 @@ function renderLive() {
   }
   const tools = [];
   if (!done && S.up.kb) tools.push(`<button class="btn" id="kbBtn" ${a.struck != null ? 'disabled' : ''}>Check KB</button>`);
-  if (LIB.policies.length) tools.push(`<button class="btn" id="polBtn" aria-expanded="${polOpen}">Policies</button>`);
+  if (hasReference()) tools.push(`<button class="btn" id="polBtn" aria-expanded="${polOpen}">Reference</button>`);
   if (done && !last) tools.unshift('<button class="btn primary" id="nextBtn">Next step</button>');
   if (done && last) tools.unshift('<button class="btn primary" id="closeBtn">Close ticket</button>');
   el.innerHTML = `
@@ -297,15 +309,19 @@ function renderLive() {
     <div class="opts">${opts}</div>
     <div class="row">${tools.join('')}</div>
     <div class="pol" id="pol" ${polOpen ? '' : 'hidden'}>
-      <input class="field" id="polQ" placeholder="Search your policies" value="${esc(sc.topic)}">
+      <input class="field" id="polQ" placeholder="Search policies and company knowledge" value="${esc(sc.kind === 'kb' ? '' : sc.topic)}">
       <div class="res" id="polRes"></div>
     </div>`;
   if (polOpen) renderPolicyHits();
   const focusBtn = $('nextBtn') || $('closeBtn'); if (focusBtn) focusBtn.focus();
 }
+const hasReference = () => LIB.policies.length || (LIB.kb || []).length || (LIB.kbPages || []).length;
 function policyHits(q) {
   const terms = q.toLowerCase().split(/\W+/).filter(t => t.length > 2);
-  const paras = LIB.policies.flatMap(p => p.text.split(/\n\s*\n/).map(t => ({ name: p.name, t: t.trim() }))).filter(p => p.t);
+  const paras = LIB.policies.flatMap(p => p.text.split(/\n\s*\n/).map(t => ({ name: 'Policy · ' + p.name, t: t.trim() })))
+    .concat((LIB.kb || []).map(e => ({ name: 'FAQ · ' + e.cat, t: e.q + '\n' + e.a })))
+    .concat((LIB.kbPages || []).flatMap(p => p.text.split(/\n\s*\n/).map(t => ({ name: 'Website · ' + p.title, t: t.trim() }))))
+    .filter(p => p.t);
   if (!terms.length) return paras.slice(0, 6);
   return paras.map(p => ({ ...p, n: terms.filter(t => p.t.toLowerCase().includes(t)).length })).filter(p => p.n).sort((a, b) => b.n - a.n).slice(0, 6);
 }
@@ -313,7 +329,7 @@ function renderPolicyHits() {
   const q = $('polQ'), res = $('polRes'); if (!q || !res) return;
   const hits = policyHits(q.value);
   res.innerHTML = hits.length ? hits.map(h => `<div><span class="src">${esc(h.name)}</span>\n${esc(h.t.length > 700 ? h.t.slice(0, 700) + '…' : h.t)}</div>`).join('')
-    : '<p class="sub">No matching policy text. Try other words.</p>';
+    : '<p class="sub">Nothing matches. Try other words.</p>';
 }
 
 // ---------- Rendering: shop, stats, controls, record ----------
@@ -428,6 +444,11 @@ function importScenarios(text) {
   if (ok) $('impText').value = '';
 }
 
+function knowledgeText() {
+  const faq = (LIB.kb || []).map(e => `Q: ${e.q}\nA: ${e.a}`).join('\n\n').slice(0, 30000);
+  const pages = (LIB.kbPages || []).map(p => `--- ${p.title} ---\n${p.text}`).join('\n\n').slice(0, 30000);
+  return [faq, pages].filter(Boolean).join('\n\n');
+}
 function buildPrompt() {
   const netSel = $('genNet').value, count = Math.max(1, Math.min(30, +$('genCount').value || 8));
   const netText = netSel === 'wireless' ? 'fixed wireless' : netSel === 'fiber' ? 'fiber to the home (PON)'
@@ -440,6 +461,7 @@ Write ${count} scenarios as a JSON array. The network is ${netText}.
 
 Rules:
 - Base each scenario on a real issue from the call logs below. Do not copy customer names, addresses, phone numbers, account numbers or other personal details. Invent neutral details instead.
+- Follow the company policies and FAQ below. Use the company's real plan names, prices and procedures where they're given.
 - Follow the company policies below. Where a policy sets a rule (credits, verification, escalation, appointments), the best answer must follow it.
 - "quotes": 3 different ways different customers might describe the same problem, in plain spoken language. Vary the wording so trainees can't recognize a call by its first few words.
 - Each step has exactly 4 options: one best practice (s: 2), one acceptable but incomplete (s: 1), and two wrong (s: 0). Each option has a one-sentence "why".
@@ -458,6 +480,9 @@ ${JSON.stringify(example, null, 1)}
 
 === COMPANY POLICIES ===
 ${LIB.policies.length ? LIB.policies.map(p => `--- ${p.name} ---\n${p.text}`).join('\n\n') : '(No policies provided. Use common ISP support best practice.)'}
+
+=== COMPANY FAQ AND WEBSITE CONTENT ===
+${knowledgeText() || '(None provided.)'}
 
 === CALL LOGS ===
 ${LOGS.length ? LOGS.map(p => `--- ${p.name} ---\n${p.text}`).join('\n\n') : '(No call logs provided. Write realistic common calls for this network type.)'}
@@ -480,7 +505,7 @@ function draw(t) {
   const lit = Math.floor(S.subs), shown = Math.min(240, Math.max(lit + 20, 60));
   for (let i = 0; i < shown; i++) {
     const x = HOUSES[i][0] * w, y = ground(x) + 4 + HOUSES[i][1] * 14;
-    cx.fillStyle = i < lit ? tok('--accent') : tok('--muted');
+    cx.fillStyle = i < lit ? tok('--warm') : tok('--muted');
     cx.globalAlpha = i < lit ? 0.9 : 0.35; cx.fillRect(x, y, 4, 3); cx.globalAlpha = 1;
   }
   const n = Math.min(S.towers, 12), nf = Math.round(n * S.set.fiber / 100), nw = n - nf;
@@ -612,12 +637,146 @@ function wireRows() {
   $('custExport').onclick = () => download('signal-desk-scenarios.json', LIB.custom.map(s => ({ ...s, id: String(s.id).replace(/^c_/, '') })));
 }
 
+// ---------- Company knowledge in the library ----------
+function renderKb() {
+  const groups = {};
+  for (const e of LIB.kb || []) (groups[e.src || 'Company FAQ'] ||= []).push(e);
+  const pages = LIB.kbPages || [];
+  $('kbList').innerHTML = Object.entries(groups).map(([src, list]) =>
+    `<li><span>${esc(src)} <span class="sub">· ${list.length} question${list.length === 1 ? '' : 's'}</span></span><button class="x" data-rmkb="${esc(src)}" aria-label="Remove questions from ${esc(src)}">×</button></li>`).join('')
+    + (pages.length ? `<li><span>Website reference text <span class="sub">· ${pages.length} page${pages.length === 1 ? '' : 's'}</span></span><button class="x" data-rmpages="1" aria-label="Remove website reference text">×</button></li>` : '')
+    || '<li class="sub">None yet. Add your FAQ or website in Setup.</li>';
+  $('kbShare').value = S.set.kbShare;
+  $('kbShareVal').textContent = S.set.kbShare + '%';
+  $('kbClear').disabled = !(LIB.kb || []).length && !pages.length;
+  const n = KBPOOL.length, have = (LIB.kb || []).length;
+  if (have && have < 4) $('kbShareVal').textContent += ' · add at least 4 questions to start knowledge calls';
+  else if (n) $('kbShareVal').textContent += ` · ${n} knowledge calls ready`;
+}
+$('kbShare').addEventListener('input', e => { S.set.kbShare = +e.target.value; renderKb() });
+$('kbShare').addEventListener('change', save);
+$('kbList').addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset.rmkb != null) LIB.kb = LIB.kb.filter(x => (x.src || 'Company FAQ') !== t.dataset.rmkb);
+  else if (t.dataset.rmpages) LIB.kbPages = [];
+  else return;
+  saveLib(); rebuildPool(); renderKb(); renderRecord(); if (S.active) renderLive();
+});
+
+// ---------- Operator setup ----------
+let setupFirst = false, setupFound = [], setupPages = [], setupWasPaused = false;
+function setSrc(src) {
+  $('srcChoices').querySelectorAll('[data-src]').forEach(b => b.setAttribute('aria-pressed', b.dataset.src === src));
+  $('faqPane').hidden = src !== 'faq'; $('sitePane').hidden = src !== 'site';
+  $('foundBox').hidden = src === 'builtin' || !setupFound.length && !setupPages.length;
+}
+function setSetupMix(f) { $('setupMix').querySelectorAll('[data-mix]').forEach(b => b.classList.toggle('on', +b.dataset.mix === f)); $('setupMix').dataset.val = f }
+function openSetup(first) {
+  setupFirst = first; setupFound = []; setupPages = [];
+  setupWasPaused = S.paused; S.paused = true; renderControls();
+  setSetupMix(S.set.fiber); setSrc('builtin');
+  $('setupTrainee').value = S.trainee || '';
+  $('siteMsg').textContent = ''; $('siteAlt').hidden = true; $('faqText').value = ''; $('siteJson').value = '';
+  $('setupCancel').textContent = first ? 'Skip for now' : 'Cancel';
+  $('setupNote').textContent = (LIB.kb || []).length ? `${LIB.kb.length} company questions already loaded.` : '';
+  $('setup').showModal();
+}
+function closeSetup() {
+  if (setupFirst) { LIB.setupDone = true; saveLib() }
+  S.paused = setupWasPaused; renderControls(); renderQueue(); if (!S.active) renderLive();
+  if ($('setup').open) $('setup').close();
+}
+function addFound(result) {
+  const have = new Set(setupFound.map(e => e.q.toLowerCase()).concat((LIB.kb || []).map(e => e.q.toLowerCase())));
+  let added = 0;
+  for (const e of result.faq || []) if (!have.has(e.q.toLowerCase())) { have.add(e.q.toLowerCase()); setupFound.push({ ...e, on: e.relevant }); added++ }
+  setupPages.push(...(result.pages || []));
+  renderFound();
+  return added;
+}
+function renderFound() {
+  const rel = setupFound.filter(e => e.relevant).length;
+  $('foundBox').hidden = !setupFound.length && !setupPages.length;
+  $('foundSum').textContent = `${setupFound.length} question${setupFound.length === 1 ? '' : 's'} found · ${rel} look relevant to CSRs`
+    + (setupPages.length ? ` · ${setupPages.length} reference page${setupPages.length === 1 ? '' : 's'}` : '');
+  $('foundList').innerHTML = setupFound.map((e, i) => `<label><input type="checkbox" data-f="${i}" ${e.on ? 'checked' : ''}>
+    <span>${esc(e.q)}<span class="a">${esc(e.a.length > 160 ? e.a.slice(0, 160) + '…' : e.a)}</span><span class="why">${e.relevant ? esc(e.cat) : 'Probably not needed by CSRs'}</span></span></label>`).join('')
+    || '<p class="sub">No question-and-answer pairs found. Reference pages will still be searchable during calls.</p>';
+  updateStartLabel();
+}
+function updateStartLabel() {
+  const n = setupFound.filter(e => e.on).length;
+  $('setupStart').textContent = n ? `Add ${n} question${n === 1 ? '' : 's'} and start` : 'Start training';
+}
+async function parseFiles(input) {
+  const files = await readFiles(input); input.value = '';
+  let added = 0;
+  for (const f of files) added += addFound(Knowledge.parse(f.text, f.name));
+  return { files: files.length, added };
+}
+
+$('setupBtn').onclick = () => openSetup(false);
+$('kbSetup').onclick = () => openSetup(false);
+$('kbClear').onclick = () => { LIB.kb = []; LIB.kbPages = []; saveLib(); rebuildPool(); renderKb(); renderRecord(); toast('Company knowledge removed.') };
+$('srcChoices').addEventListener('click', e => { const b = e.target.closest('[data-src]'); if (b) setSrc(b.dataset.src) });
+$('setupMix').addEventListener('click', e => { const b = e.target.closest('[data-mix]'); if (b) setSetupMix(+b.dataset.mix) });
+$('faqFile').addEventListener('change', async e => { const r = await parseFiles(e.target); toast(`Found ${r.added} new question${r.added === 1 ? '' : 's'} in ${r.files} file${r.files === 1 ? '' : 's'}.`) });
+$('faqParse').onclick = () => {
+  const t = $('faqText').value.trim(); if (!t) return toast('Paste your FAQ first.');
+  const n = addFound(Knowledge.parse(t, 'Pasted FAQ'));
+  toast(n ? `Found ${n} new question${n === 1 ? '' : 's'}.` : 'No questions found. Make sure each question ends with a question mark.');
+};
+$('siteUrl').addEventListener('input', () => { $('scrapeCmd').textContent = 'python tools/scrape_site.py ' + ($('siteUrl').value.trim() || 'https://www.your-isp.com') });
+$('siteFetch').onclick = async () => {
+  let url = $('siteUrl').value.trim(); if (!url) return msg('siteMsg', 'Enter your website address first.', false);
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try { new URL(url) } catch { return msg('siteMsg', 'That doesn’t look like a web address.', false) }
+  $('siteFetch').disabled = true; msg('siteMsg', 'Reading ' + url + '…', true);
+  const r = await Knowledge.readSite(url, m => msg('siteMsg', m, true));
+  $('siteFetch').disabled = false;
+  if (r.blocked) { msg('siteMsg', 'This website doesn’t allow other pages to read it directly. Use one of the options below.', false); $('siteAlt').hidden = false; return }
+  const n = addFound(r);
+  msg('siteMsg', `Read the site: ${n} question${n === 1 ? '' : 's'} and ${r.pages.length} reference page${r.pages.length === 1 ? '' : 's'} found.`, n > 0 || r.pages.length > 0);
+  if (!n) $('siteAlt').hidden = false;
+};
+$('cmdCopy').onclick = async () => { try { await navigator.clipboard.writeText($('scrapeCmd').textContent); toast('Command copied.') } catch { toast('Select the command and copy it.') } };
+$('sitePrompt').onclick = async () => {
+  const p = Knowledge.sitePrompt($('siteUrl').value.trim() || 'https://www.your-isp.com');
+  try { await navigator.clipboard.writeText(p); toast('Prompt copied. Paste it into Claude.') } catch { $('siteJson').value = p; $('siteJson').select(); toast('Copy the selected prompt.') }
+};
+$('siteFile').addEventListener('change', async e => { const r = await parseFiles(e.target); toast(`Found ${r.added} new question${r.added === 1 ? '' : 's'}.`) });
+$('siteParse').onclick = () => {
+  const t = $('siteJson').value.trim(); if (!t) return toast('Paste the JSON first.');
+  const n = addFound(Knowledge.parse(t, $('siteUrl').value.trim() || 'Website'));
+  toast(`Found ${n} new question${n === 1 ? '' : 's'}.`);
+};
+$('foundList').addEventListener('change', e => { const i = e.target.dataset.f; if (i != null) { setupFound[+i].on = e.target.checked; updateStartLabel() } });
+$('selRel').onclick = () => { setupFound.forEach(e => e.on = e.relevant); renderFound() };
+$('selNone').onclick = () => { setupFound.forEach(e => e.on = false); renderFound() };
+$('setupCancel').onclick = closeSetup;
+$('setup').addEventListener('cancel', e => { e.preventDefault(); closeSetup() });
+$('setupStart').onclick = () => {
+  S.set.fiber = +($('setupMix').dataset.val ?? S.set.fiber);
+  S.trainee = $('setupTrainee').value.trim();
+  const picked = setupFound.filter(e => e.on).map(({ on, relevant, ...e }) => e);
+  LIB.kb = (LIB.kb || []).concat(picked);
+  if (setupPages.length) {
+    const seen = new Set((LIB.kbPages || []).map(p => p.url + '|' + p.title));
+    LIB.kbPages = (LIB.kbPages || []).concat(setupPages.filter(p => !seen.has(p.url + '|' + p.title)));
+    let total = 0; LIB.kbPages = LIB.kbPages.filter(p => (total += p.text.length) < 300000);
+  }
+  LIB.setupDone = true; saveLib(); rebuildPool();
+  setupFirst = false; closeSetup(); renderAll(); save();
+  if (picked.length) toast(`Added ${picked.length} questions. About ${S.set.kbShare}% of coaching calls will be knowledge calls.`);
+};
+
 // ---------- Boot ----------
-function renderAll() { renderStats(); renderControls(); renderQueue(); renderLive(); renderLog(); updateShop(); renderRecord(); renderLib() }
+function renderAll() { renderStats(); renderControls(); renderQueue(); renderLive(); renderLog(); updateShop(); renderRecord(); renderLib(); renderKb() }
 function start() {
   S = migrate(load());
   if (!S.log.length) log('<b>Shift started.</b> Your first site is live with 30 subscribers.');
   buildShop(); wireRows(); renderAll();
+  if (!LIB.setupDone) openSetup(true);
   let last = performance.now(), saveT = 0;
   setInterval(() => {
     const now = performance.now(), dt = Math.min(5, (now - last) / 1000); last = now;

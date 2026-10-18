@@ -18,7 +18,7 @@ To host it for a team, turn on GitHub Pages for this repo (Settings â†’ Pages â†
 
 ## Glossary
 
-Technical terms in a call (RSSI, SNR, ONT, PoE injector, CGNAT and about 50 more) are marked with a small **?**. Clicking one, or pressing Enter on it, opens an info screen and pauses the game. The screen covers:
+Technical terms in a call (RSSI, SNR, ONT, PoE injector, CGNAT and others, 46 in all) are marked with a small **?**. Clicking one, or pressing Enter on it, opens an info screen and pauses the game. The screen covers:
 
 - what the term means
 - good and bad readings, where they apply (for example RSSI in dBm or fiber light levels)

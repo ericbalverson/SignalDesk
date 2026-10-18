@@ -1,0 +1,135 @@
+// Signal Desk scenarios: calls that happen on any network (billing, security, sales, escalation).
+// net:'any' means the call is used for both wireless and fiber training.
+(window.SIGNAL_DESK_SCENARIOS ||= []).push(
+ { id:'a-suspend', net:'any', topic:'Billing', plan:'50/10 Mbps',
+   quotes:['You cut off my internet! I’ve been with you six years!',
+           'Why is my service shut off? I always pay!',
+           'My internet stopped and the page says my account is suspended.'],
+   data:[['Status','Suspended for non-payment, 3 days'],['Balance','$134.98'],['Autopay card','Expired 08/26'],['Reminders sent','2 emails']],
+   options:[
+    {t:'Acknowledge their loyalty, explain the autopay card expired, and offer to update it and restore service.', s:2, why:'Empathy first, a plain explanation, and the fastest path back online.'},
+    {t:'Tell them it’s their fault for not updating the card.', s:0, why:'True or not, blame escalates the call and doesn’t get them online.'},
+    {t:'Restore service right away as a courtesy for a six-year customer, and ask them to pay when they can.', s:1, why:'Kind, but it skips the actual fix. Only do this if policy allows a courtesy restore.'},
+    {t:'Transfer them to billing without explaining anything.', s:0, why:'They have to tell the story again. You had what you needed to solve it.'}],
+   lesson:'Lead with empathy, explain the cause plainly, and give the fastest path back online.' },
+
+ { id:'a-prorate', net:'any', topic:'Billing', plan:'100/20 Mbps',
+   quotes:['Why is my bill $40 higher this month?',
+           'You overcharged me. My plan is $70, not $93.',
+           'I upgraded and got charged twice!'],
+   data:[['Plan change','Upgraded on the 14th'],['This bill','$23.17 prorated upgrade + $93.00 new monthly'],['Next bill','$93.00']],
+   options:[
+    {t:'Tell them the bill is correct and move on.', s:0, why:'It is correct, but they leave confused and likely call again.'},
+    {t:'Refund the difference so they stay happy, and note the account so the next bill looks normal.', s:1, why:'Ends the call, but the charge was valid and they still don’t understand it.'},
+    {t:'Explain the prorated upgrade charge plus the new rate, and confirm next month’s amount.', s:2, why:'Clear explanation prevents the repeat call next month.'},
+    {t:'Transfer to billing without looking at the account.', s:0, why:'You can see everything needed to explain it.'}],
+   lesson:'Explain proration in plain terms and confirm what the next bill will be.' },
+
+ { id:'a-moving', net:'any', topic:'Sales', plan:'50/10 Mbps',
+   quotes:['I’m moving next month. I need to cancel.',
+           'We sold the house. How do I shut this off?',
+           'Cancel my service, we’re moving across town.'],
+   data:[['New address','12 Elm St · serviceable'],['Contract','Month-to-month'],['Equipment','Company router (returnable)']],
+   options:[
+    {t:'Cancel it right away, no questions asked.', s:0, why:'The new address is serviceable. You lost a customer you could have kept.'},
+    {t:'Ask where they’re moving and offer to move service there before cancelling.', s:2, why:'Keeps a happy customer when possible and handles the cancel cleanly when not.'},
+    {t:'Process the cancellation for their move date and email them the equipment return steps.', s:1, why:'Correct process, but you never offered to move service.'},
+    {t:'Tell them they owe an early-termination fee first.', s:0, why:'They’re month-to-month, and leading with fees sours the call.'}],
+   lesson:'On a moving call, check the new address before cancelling.' },
+
+ { id:'a-porting', net:'any', topic:'Sales', plan:'Prospect',
+   quotes:['I want your phone service but I need to keep my number.',
+           'Should I cancel my old phone company first?',
+           'Can I bring my landline number over to you?'],
+   data:[['Port request','None yet'],['Old carrier','Still active'],['Typical port time','5-10 business days']],
+   options:[
+    {t:'Tell them to cancel their old service first, then call us.', s:0, why:'Cancelling first can release the number and lose it.'},
+    {t:'Tell them numbers usually can’t be transferred.', s:0, why:'Most numbers can be ported.'},
+    {t:'Explain that porting is possible and tell them to call back once they’ve decided to switch.', s:1, why:'Not harmful, but you didn’t answer the key question.'},
+    {t:'Start a port request and tell them to keep the old service active until the port completes.', s:2, why:'Protects the number and keeps them reachable during the switch.'}],
+   lesson:'Never cancel the old phone service before the port completes.' },
+
+ { id:'a-verify', net:'any', topic:'Security', plan:'50/10 Mbps', caller:'Unverified caller',
+   quotes:['I need to change the email on my partner’s account. They’re at work.',
+           'I’m calling for my mother. Can you update her password?',
+           'Can you tell me what card is on file? It’s my roommate’s account.'],
+   data:[['Account holder','J. Alvarez'],['Authorized users','None'],['Verification','Caller could not give account PIN'],['Caller knows','Service address, plan']],
+   options:[
+    {t:'Make the change, since they know the address and plan.', s:0, why:'An address and plan are easy to find. This is how account takeovers happen.'},
+    {t:'Explain only the holder or an authorized user can make changes, and how to get added.', s:2, why:'Protects the customer and still gives the caller a way forward.'},
+    {t:'Read them the current details so they can confirm them.', s:0, why:'That discloses private data to an unverified caller.'},
+    {t:'Tell them the account holder has to call in personally, and end the call politely.', s:1, why:'Correct refusal, but you could have explained how to get authorized.'}],
+   lesson:'Never change or disclose account details without verification. Knowing an address isn’t verification.' },
+
+ { id:'a-phish', net:'any', topic:'Security', plan:'100/20 Mbps',
+   quotes:['I got an email from you saying my account will close unless I enter my password.',
+           'Did you text me asking to verify my card number?',
+           'Someone called saying they were from your company and wanted my login.'],
+   data:[['Security bulletin','Phishing campaign using our name this week'],['Account changes','None in 30 days']],
+   options:[
+    {t:'Ask them to read you the password so you can check it.', s:0, why:'Staff never need a customer’s password. This teaches them the scam is normal.'},
+    {t:'Tell them it’s not from us, not to click it, and confirm their account wasn’t changed.', s:2, why:'Protects them now and reassures them nothing was changed.'},
+    {t:'Tell them it sounds like a scam, to delete the message, and to call if they get another one.', s:1, why:'Good advice, but you didn’t check their account or say how to report it.'},
+    {t:'Tell them it’s probably real and to follow the steps.', s:0, why:'It matches a known phishing campaign.'}],
+   lesson:'We never ask for passwords by email, text or call. Warn, check the account, and explain how to report it.' },
+
+ { id:'a-cgnat', net:'any', topic:'Network', plan:'50/10 Mbps',
+   quotes:['My security camera app can’t connect when I’m away from home.',
+           'I set up port forwarding for my game server and nobody can join.',
+           'My remote desktop works at the office but not to my house.'],
+   data:[['WAN IP','100.64.18.42 (CGNAT)'],['Plan','Residential'],['Public IP add-on','$10/mo']],
+   options:[
+    {t:'Tell them to set up port forwarding on their router.', s:0, why:'Port forwarding does nothing behind CGNAT. They’ll waste hours.'},
+    {t:'Escalate to the NOC as a connectivity problem.', s:0, why:'Their internet works. This is how the service is provisioned.'},
+    {t:'Explain they share a public IP (CGNAT), and offer the public IP add-on.', s:2, why:'100.64.x.x addresses are carrier-grade NAT. A public IP or a cloud relay solves it.'},
+    {t:'Tell them residential plans don’t support hosting from home, so the camera app won’t work remotely.', s:1, why:'Not wrong, but there are real options to offer.'}],
+   lesson:'100.64.x.x is CGNAT. Inbound access needs a public IP or a cloud relay.' },
+
+ { id:'a-onesite', net:'any', topic:'Network', plan:'100/20 Mbps',
+   quotes:['Everything works except my bank’s website.',
+           'Only Facebook won’t load. Is your internet broken?',
+           'Hulu won’t play but YouTube works fine.'],
+   data:[['Connection','Online, no errors'],['Other sites','Load normally'],['Outage reports','Spike for that service right now']],
+   options:[
+    {t:'Escalate to the NOC as a network outage.', s:0, why:'Only one site fails and it’s reporting its own outage.'},
+    {t:'Have them reboot their router and clear the browser cache, then try the site again.', s:1, why:'Harmless, but it won’t fix a problem on the website’s end.'},
+    {t:'Tell them to switch to a different browser for good.', s:0, why:'The browser isn’t the problem.'},
+    {t:'Explain their connection is fine and that site is having its own outage right now.', s:2, why:'Accurate, and it saves everyone time.'}],
+   lesson:'If one site fails and others work, check whether that service is down before troubleshooting the connection.' },
+
+ { id:'a-router', net:'any', topic:'Equipment', plan:'50/10 Mbps',
+   quotes:['The Wi-Fi network disappeared from all my devices.',
+           'My router has no lights at all.',
+           'None of my devices can see the Wi-Fi anymore.'],
+   data:[['Our equipment','Online'],['Customer router','Not responding'],['Neighbors','Online']],
+   options:[
+    {t:'Our equipment is online, so have them check the router’s power adapter and outlet.', s:2, why:'Our side is fine and the router is dark, so power is the first thing to check.'},
+    {t:'Tell them there’s an outage in the area.', s:0, why:'Our equipment and the neighbors are online.'},
+    {t:'Book a tech to bring a replacement router, since it might have failed after a power surge.', s:1, why:'May be needed if it’s dead, but check power first.'},
+    {t:'Reset the radio or ONT remotely and close the ticket.', s:0, why:'Our equipment isn’t the problem.'}],
+   lesson:'If our equipment is online and the Wi-Fi is gone, check the router’s power before anything else.' },
+
+ { id:'a-repeat', net:'any', topic:'Escalation', plan:'100/20 Mbps',
+   quotes:['This is the third outage this month. I want a manager.',
+           'I’m done. Three outages in four weeks. Get me a supervisor.',
+           'Why do I keep losing service? Let me talk to someone in charge.'],
+   data:[['Tickets, 30 days','3 (2 site power, 1 equipment)'],['Credits applied','None'],['Site Hilltop-1','2 power failures this month']],
+   options:[
+    {t:'Tell them outages happen and there’s nothing you can do.', s:0, why:'Dismissive, and there’s a recurring site problem to escalate.'},
+    {t:'Apologize for the trouble and transfer them to a manager right away, as they asked.', s:1, why:'Meets the request, but you could have solved most of it yourself.'},
+    {t:'Acknowledge the pattern, credit per policy, escalate the site power issue, and offer a callback.', s:2, why:'Shows you know the history, acts within your authority, and fixes the root cause.'},
+    {t:'Offer a large discount so they don’t leave.', s:0, why:'Exceeds normal authority and doesn’t fix the problem.'}],
+   lesson:'Own it: show you know the history, act within your authority, escalate the root cause, then offer escalation.' },
+
+ { id:'a-threat', net:'any', topic:'Escalation', plan:'50/10 Mbps',
+   quotes:['If this isn’t fixed today I’m posting about you everywhere.',
+           'I’m going to leave a one-star review and tell everyone in town.',
+           'Fix this now or I’m calling the local news.'],
+   data:[['Ticket','Open 2 days'],['Tech visit','Tomorrow 8-12'],['Earlier slots','Cancellation list available']],
+   options:[
+    {t:'Tell them threats won’t get them better service.', s:0, why:'Escalates the conflict and changes nothing.'},
+    {t:'Promise a tech today without checking the schedule.', s:0, why:'A promise you can’t keep makes the review worse.'},
+    {t:'Stay calm, confirm tomorrow’s visit, and add them to the cancellation list for an earlier slot.', s:2, why:'Respectful, accurate, and it gives them the best real chance of a sooner fix.'},
+    {t:'Apologize for the delay and transfer them to a supervisor who can decide how to handle the complaint.', s:1, why:'Sometimes right, but you have the tools to help first.'}],
+   lesson:'Respond to threats calmly with facts and real options. Never promise what you can’t confirm.' }
+);

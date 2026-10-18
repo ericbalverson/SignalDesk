@@ -1,0 +1,147 @@
+// Signal Desk scenarios: fiber (FTTH / PON) calls.
+// Format is described in README.md. s: 2 = best practice, 1 = acceptable but incomplete, 0 = wrong.
+(window.SIGNAL_DESK_SCENARIOS ||= []).push(
+ { id:'f-los', net:'fiber', topic:'Connectivity', plan:'500/500 Mbps',
+   quotes:['There’s a red light on the white box on my wall and no internet.',
+           'Everything’s down. The box in the garage has an alarm light on.',
+           'My internet died right after I moved some furniture in the den.'],
+   data:[['ONT status','LOS (red) since 4:18 PM'],['Rx optical power','No light'],['PON port','OLT-2 1/4 · 31 of 32 online'],['Account','Current']],
+   options:[
+    {t:'Have them check the green fiber cable at the ONT is clicked in and not kinked, without looking in it.', s:2, why:'Only this ONT lost light while its PON neighbors are fine, so the patch cable or a tight bend at the home is the likely cause.'},
+    {t:'Tell them a fiber cut is affecting the neighborhood.', s:0, why:'31 of 32 ONTs on the port are online. It isn’t a cut.'},
+    {t:'Book a technician for the next open appointment to test the ONT and the light coming into the home.', s:1, why:'May be needed, but the customer can often fix a loose or bent patch cable in a minute.'},
+    {t:'Have them unplug the fiber and blow on the connector to clean it.', s:0, why:'Breath adds moisture and dirt to the connector, and they may look into the laser.'}],
+   lesson:'Red LOS with PON neighbors online: check the patch cable seating and bends first. Never look into a fiber.' },
+
+ { id:'f-power', net:'fiber', topic:'Connectivity', plan:'1 Gbps',
+   quotes:['The fiber box is completely dark and the backup thing keeps beeping.',
+           'There are no lights at all on the internet box.',
+           'The power flickered this morning and now there’s no internet.'],
+   data:[['ONT status','Unreachable'],['Last alarm','Dying gasp (power loss) 6:12 AM'],['Battery unit','Reported on battery, low'],['PON port','All other ONTs online']],
+   options:[
+    {t:'Tell them the fiber line must be damaged.', s:0, why:'A dying-gasp alarm means power loss, not a fiber fault.'},
+    {t:'Have them press the silence button on the battery unit and call back if service doesn’t return.', s:1, why:'Stops the noise, but they’re still offline.'},
+    {t:'Have them check the outlet and breaker for the ONT’s power supply, since the ONT reported losing power.', s:2, why:'The alarm tells you exactly what happened. A tripped breaker or unplugged supply is the usual cause.'},
+    {t:'Send a tech to replace the ONT.', s:0, why:'The ONT is likely fine. It just has no power.'}],
+   lesson:'A dying-gasp alarm means the ONT lost power. Check the outlet, breaker and power supply first.' },
+
+ { id:'f-nic', net:'fiber', topic:'Speed', plan:'1 Gbps',
+   quotes:['I pay for a gig and my computer gets 94. Every single time.',
+           'Wired speed test says 94 Mbps. That can’t be right on fiber.',
+           'Even plugged in, I never get more than about 95.'],
+   data:[['ONT LAN port','Linked at 100 Mbps full duplex'],['Rx optical power','-18.4 dBm'],['Customer wired test','94 / 93 Mbps']],
+   options:[
+    {t:'Escalate to the NOC as a PON capacity problem.', s:0, why:'The ONT shows a 100 Mbps link. That’s a cable or port issue in the home.'},
+    {t:'Explain the link is running at 100 Mbps, and have them try a Cat5e or better cable and another port.', s:2, why:'A ceiling near 94 Mbps means something is linking at 100. A cable swap often fixes it.'},
+    {t:'Reboot the ONT and their router so the connection renegotiates, then run the wired test again.', s:1, why:'Occasionally renegotiates, but a bad cable will link at 100 again.'},
+    {t:'Tell them online speed tests are never accurate.', s:0, why:'The test is accurate. It’s showing a real 100 Mbps limit.'}],
+   lesson:'A test stuck near 94 Mbps means something links at 100 Mbps: an old cable, a damaged pin or a 10/100 port.' },
+
+ { id:'f-gigwifi', net:'fiber', topic:'Speed', plan:'1 Gbps',
+   quotes:['I’m paying for a gig and my phone only gets 300.',
+           'Why can’t my laptop get the full gig over Wi-Fi?',
+           'Your fiber is supposed to be a gig. My iPad says 280.'],
+   data:[['Router wired test','938 / 921 Mbps'],['Customer test','310 Mbps · phone on Wi-Fi'],['Rx optical power','-17.9 dBm']],
+   options:[
+    {t:'Open a ticket for low speeds on the fiber line.', s:0, why:'The wired test proves the line delivers a full gig.'},
+    {t:'Offer to send a technician to test speeds inside the home and check their Wi-Fi setup.', s:1, why:'Costs a visit to learn what the data already shows.'},
+    {t:'Suggest they drop to a cheaper plan since they can’t use a gig.', s:0, why:'Wired devices and multiple users still benefit from the gig.'},
+    {t:'Explain the line delivers a full gig wired, but most devices top out lower on Wi-Fi.', s:2, why:'Sets realistic expectations about device and Wi-Fi limits without blaming the customer.'}],
+   lesson:'Gig plans are measured wired. Most Wi-Fi devices can’t reach a full gig.' },
+
+ { id:'f-dirty', net:'fiber', topic:'Optical & Plant', plan:'500/500 Mbps',
+   quotes:['It drops a few times a day, then comes back on its own.',
+           'The internet cuts out randomly. The box flashes red for a second.',
+           'Every so often everything freezes for a minute.'],
+   data:[['Rx optical power','-28.9 dBm (install: -19.2)'],['FEC errors','Rising for 10 days'],['PON neighbors','Normal levels']],
+   options:[
+    {t:'Note the light level has dropped since install, and book a tech to clean and test the fiber.', s:2, why:'A 10 dB loss on one ONT while neighbors are normal points to a dirty connector, bend or damaged drop.'},
+    {t:'Have them unplug the fiber and wipe the end with a shirt.', s:0, why:'Cloth scratches and contaminates the end face, and they risk looking into it.'},
+    {t:'Reboot the ONT remotely and set a reminder to check its light level and errors in a few days.', s:1, why:'Doesn’t address the light loss, which is the actual problem.'},
+    {t:'Tell them a little dropping is normal on fiber.', s:0, why:'It isn’t, and the data shows a clear fault.'}],
+   lesson:'Rx power near the ONT’s limit (about -27 to -28 dBm) causes drops. A tech cleans and tests connectors.' },
+
+ { id:'f-bend', net:'fiber', topic:'Optical & Plant', plan:'1 Gbps',
+   quotes:['We just had cabinets installed and now the internet keeps cutting out.',
+           'Since the remodel, the internet is flaky.',
+           'The contractors moved the fiber box and it hasn’t been right since.'],
+   data:[['Rx optical power','-26.8 dBm (last month: -18.5)'],['Change date','Matches remodel start'],['PON neighbors','Normal']],
+   options:[
+    {t:'Ask if the fiber was moved or pinched, warn them not to bend it, and book a tech.', s:2, why:'The level dropped exactly when work started. A tight bend or pinch is the likely cause and needs a tech.'},
+    {t:'Tell them to straighten and stretch the fiber cable.', s:0, why:'Pulling on fiber can break it. Leave it for a tech.'},
+    {t:'Reset the ONT remotely, confirm it comes back online, and close the ticket as resolved.', s:1, why:'A reset won’t restore lost light.'},
+    {t:'Tell them it’s a network-wide issue.', s:0, why:'Neighbors on the same port are normal.'}],
+   lesson:'A sudden light loss after home work suggests a bend or pinch. Don’t let customers pull or reshape fiber.' },
+
+ { id:'f-cut', net:'fiber', topic:'Outages', plan:'500/500 Mbps',
+   quotes:['My neighbor and I both have red lights on our fiber boxes.',
+           'Everything went down around 10:45. Is it you or me?',
+           'Is the fiber out? There’s a backhoe down the road.'],
+   data:[['PON ports','OLT-1 1/1-1/4 · LOS at 10:42 AM'],['Affected ONTs','118'],['NOC note','Contractor hit fiber on Route 9; splice crew dispatched']],
+   options:[
+    {t:'Confirm the outage from a fiber cut, give an honest status without promising a time, and note the account.', s:2, why:'Accurate and honest. Splice times vary, so don’t guess.'},
+    {t:'Walk them through rebooting the ONT and router.', s:0, why:'118 ONTs lost light at once. Nothing at the home will fix it.'},
+    {t:'Confirm there’s an outage in their area and ask them to call back later this afternoon for an update.', s:1, why:'True, but no note on the account and no update path.'},
+    {t:'Promise service will be back within the hour.', s:0, why:'Splicing can take hours. Don’t promise what you don’t know.'}],
+   lesson:'Many ONTs losing light at once means a plant outage. Confirm, log, and set honest expectations.' },
+
+ { id:'f-eye', net:'fiber', topic:'Safety', plan:'1 Gbps',
+   quotes:['I unplugged the green cable. Should I look in it to see if light is coming out?',
+           'Can I just peek into the end of the fiber to see if it’s working?',
+           'If I look into the fiber cable will I see a light?'],
+   data:[['ONT status','LOS since 9:02 AM (customer unplugged patch cable)'],['PON port','All other ONTs online']],
+   options:[
+    {t:'Tell them to look closely; a red glow means it’s working.', s:0, why:'PON lasers are invisible infrared. Looking into the fiber can damage eyes.'},
+    {t:'Tell them not to look into it, have them leave it unplugged, and book a tech to check the fiber.', s:1, why:'Safe, but you can check the light level remotely once it’s reconnected.'},
+    {t:'Tell them never to look into it, have them reconnect it, and check the light level remotely.', s:2, why:'Keeps them safe and answers the question with real data.'},
+    {t:'Have them shine a flashlight on the connector to inspect it.', s:0, why:'Encourages looking at the fiber end, which is unsafe.'}],
+   lesson:'Never ask a customer to look into a fiber. The laser is invisible and can damage eyes. Read light levels remotely.' },
+
+ { id:'f-dig', net:'fiber', topic:'Safety', plan:'500/500 Mbps',
+   quotes:['I’m putting in a fence this weekend. Will your line be in the way?',
+           'We’re digging a garden bed near where your crew buried the cable.',
+           'Where exactly is the fiber buried? I’m about to dig post holes.'],
+   data:[['Drop type','Buried, along east property line'],['Install notes','Approx. depth 12-18 in.']],
+   options:[
+    {t:'Tell them it’s buried deep enough to dig freely.', s:0, why:'Depths vary and post holes go deeper than drops.'},
+    {t:'Tell them where the drop runs from your install notes so they can plan the fence line around it.', s:1, why:'Helpful context, but a guess isn’t a locate.'},
+    {t:'Tell them to dig carefully by hand and they’ll be fine.', s:0, why:'Hand digging still cuts drops, and other utilities may be there too.'},
+    {t:'Tell them to call 811 for a free locate before digging, and note it on the account.', s:2, why:'811 marks every buried utility, not just yours. It’s the safe and required step.'}],
+   lesson:'Anyone digging should call 811 first. Guessing at a drop location leads to cuts.' },
+
+ { id:'f-vlan', net:'fiber', topic:'Equipment', plan:'1 Gbps',
+   quotes:['I hooked my own mesh system to the fiber box and get no internet.',
+           'I swapped your router for mine. The ONT lights look fine but nothing works.',
+           'My new router says the WAN cable is connected but no IP address.'],
+   data:[['ONT status','Online · Rx -18.1 dBm'],['Provisioning','WAN requires VLAN 201 tag, DHCP'],['Policy','Customer routers allowed']],
+   options:[
+    {t:'Tell them personal routers aren’t allowed on fiber.', s:0, why:'Policy allows them. The router just needs the right settings.'},
+    {t:'Give them the VLAN tag and DHCP settings for the WAN, or offer to keep our router in front of theirs.', s:2, why:'The ONT is fine. Without the VLAN tag their router never gets an address.'},
+    {t:'Have them restart the ONT and then their router, in that order, and wait a few minutes for it to connect.', s:1, why:'Won’t help until the VLAN is set.'},
+    {t:'Book a tech to replace the ONT.', s:0, why:'The ONT is online with good light.'}],
+   lesson:'Many fiber networks need a VLAN tag on the router WAN. Know your provisioning so customer routers can connect.' },
+
+ { id:'f-drop', net:'fiber', topic:'Escalation', plan:'500/500 Mbps',
+   quotes:['There’s been an orange cable lying across my lawn for six weeks.',
+           'When is someone burying this cable? I can’t mow.',
+           'Your temporary line is still across my yard. This is ridiculous.'],
+   data:[['Drop','Temporary, surface-laid'],['Burial ticket','Open 41 days, no date assigned'],['Standard','Burial within 30 days']],
+   options:[
+    {t:'Apologize that the burial is overdue, escalate for a firm date, and call them back with it.', s:2, why:'Owns the miss, gets a real date, and closes the loop.'},
+    {t:'Tell them burial happens when the crew gets to it.', s:0, why:'Dismissive, and the ticket is past your own standard.'},
+    {t:'Tell them to mow around it for now and that the crew will bury it as soon as they reach their area.', s:1, why:'Practical, but nothing gets the burial scheduled.'},
+    {t:'Tell them they can bury it themselves to speed it up.', s:0, why:'Untrained burial risks damage and puts the customer at risk.'}],
+   lesson:'Temporary drops are routine, but overdue burial needs an owner and a follow-up date.' },
+
+ { id:'f-avail', net:'fiber', topic:'Sales', plan:'Prospect',
+   quotes:['Is fiber coming to my street?',
+           'My neighbor across the road has fiber. Why can’t I get it?',
+           'I keep seeing your trucks around. When can I sign up?'],
+   data:[['Build map','Phase 3 planned area'],['Phase 3 target','Q2 next year (not confirmed)'],['Pre-registration','Open']],
+   options:[
+    {t:'Tell them it’ll be ready next month.', s:0, why:'The target is next year and not even confirmed.'},
+    {t:'Tell them fiber isn’t available at their address yet and to check the website for updates.', s:1, why:'True today, but you lose a lead you could have registered.'},
+    {t:'Sign them up and book an install date now.', s:0, why:'There’s no fiber to connect yet.'},
+    {t:'Explain they’re in a planned phase, don’t promise a date, and add them to pre-registration.', s:2, why:'Honest about timing and keeps the customer engaged.'}],
+   lesson:'Share build plans honestly, avoid promising dates, and capture interest with pre-registration.' }
+);
